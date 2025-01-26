@@ -45,12 +45,7 @@ export class NonDeterministicAutomata extends Node{
         //Rever essa parte, elements depende do tipo visto
         const ast = parseRegExpLiteral(regex);
 
-        const alternatives = ast.pattern.alternatives;
-
-        for(const alternative of alternatives){
-
-            this.extractFromRegexNode(alternative);
-        }
+        this.extractFromRegexNode(ast.pattern)
         
     }
 
@@ -68,6 +63,9 @@ export class NonDeterministicAutomata extends Node{
                 break;
             case "Alternative":
                 this.addConcatenation(regexNode);
+                break;
+            case "Pattern":
+                this.addConcatenation({elements: regexNode.alternatives})
                 break;
             case "CharacterClass": 
                 this.addCharacterRange(regexNode);
@@ -161,8 +159,6 @@ export class NonDeterministicAutomata extends Node{
 
     addEdge(fromNode, toNode, edgeValue = null) {
 
-        console.log(fromNode, toNode)
-
         if (!fromNode || !toNode) {
             throw new Error("Both fromNode and toNode are required to add an edge.");
         }
@@ -233,7 +229,7 @@ export class NonDeterministicAutomata extends Node{
         this.in  = [];
         this.out = [];
 
-        this.edges = this.edges.filter(edge => edge.to != this && edge.from != this); //Remove todas as arestas autoreferenciais
+        this.edges = this.edges.filter(edge => !(edge.to == this || edge.from == this)); //Remove todas as arestas autoreferenciais
 
 
         //Loop para extrair os subautomatos internos
@@ -283,6 +279,9 @@ export class NonDeterministicAutomata extends Node{
         
         //Remove todos os nós automatons
         this.nodes = this.nodes.filter(node => node.type != NodeType.automaton)
+        
+        this.edges = this.edges.filter(edge => !(edge.to == this || edge.from == this)); //Remove todas as arestas autoreferenciais
+
 
         this.removeRedundantNodes();
     }
@@ -355,6 +354,8 @@ export class DotGraphConverter {
 // // Exemplo de uso
 const automata = new NonDeterministicAutomata();
 automata.fromRegex(/ab/);
+
+// automata.extractSubautomata();
 
 automata.extractSubautomata();
 
