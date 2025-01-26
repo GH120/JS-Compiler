@@ -37,7 +37,7 @@ class NonDeterministicAutomata extends Node{
 
         //Rever essa parte, elements depende do tipo visto
         const ast = parseRegExpLiteral(regex);
-        const expressionNodes = ast.pattern.alternatives[0].elements;
+        const expressionNodes = ast.pattern.alternatives;
 
         const automaton = this;
         
@@ -46,6 +46,7 @@ class NonDeterministicAutomata extends Node{
         function processNodes(nodes){
             
             for (const node of nodes) {
+
                 switch (node.type) {
                     case "Character":
                         automaton.addCharacter(new RegExp(node.raw));
@@ -102,9 +103,10 @@ class NonDeterministicAutomata extends Node{
         if (!fromNode || !toNode) {
             throw new Error("Both fromNode and toNode are required to add an edge.");
         }
-        fromNode.edges.push({ to: toNode.id, value: edgeValue });
+        
+        // fromNode.edges.push({ to: toNode, value: edgeValue });
 
-        this.edges.push({ from: fromNode.id, to: toNode.id, value: edgeValue });
+        this.edges.push({ from: fromNode, to: toNode, value: edgeValue, id:`[${fromNode.id}, ${toNode.id}]`});
     }
 
     addLoop(node) {
@@ -148,8 +150,8 @@ class NonDeterministicAutomata extends Node{
         for(const node of this.nodes){
 
             
-            if(node.type != NodeType.automaton) return;
-
+            if(node.type != NodeType.automaton) continue;
+            
             const automaton = node;
 
             automaton.extractSubautomata(); //Garante que o automato não terá subautomatos
@@ -173,24 +175,44 @@ class NonDeterministicAutomata extends Node{
             for(const outputEdge of edgesFromAutomaton){
 
                 //Adiciona para cada nó de entrada essa aresta
-                automaton.endNodes.forEach(endNode => this.addEdge(endNode, outputEdge.to, inputEdge.value));
+                automaton.endNodes.forEach(endNode => this.addEdge(endNode, outputEdge.to, outputEdge.value));
+
             }
 
-            this.edges = this.edges.filter(edge => edge.from != automaton); //Remove as arestas saindo desse automato
+        
+            //Adiciona arestas e nós do subautomato no automato maior
 
+            automaton.nodes.forEach(node => this.addNode(node, NodeType.normalNode));
+
+            this.edges = this.edges.concat(automaton.edges); //Adiciona todas as arestas do subautomato
+
+            this.edges = this.edges.filter(edge => edge.from != automaton); //Remove as arestas saindo desse subautomato
         }
 
         //Remove todos os nós automatons
-        this.nodes.forEach(node => (node.type == NodeType.automaton)? this.removeNode(node) : null);
+        this.nodes = this.nodes.filter(node => node.type != NodeType.automaton)
+    }
+
+    removeNode(node){
+        this.nodes = this.nodes.filter(node => node != node);
+        this.initialNodes = this.initialNodes.filter(node => node != node);
+        this.endNodes = this.endNodes.filter(node => node != node);
+
+        this.edges = this.edges.filter(edge => edge.from != node);
+        this.edges = this.edges.filter(edge => edge.to != node);
     }
 }
 
 // // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/a(b|c)*d?/);
+automata.fromRegex(/(a|b)*/);
+
+automata.extractSubautomata();
 
 console.log(automata)
 
+// console.log(automata.nodes[2])
+
 //new NonDeterministicAutomata().fromRegex(/a(b|c)*d?/)
 
-// console.log(parseRegExpLiteral(/a(b|c)/).pattern.alternatives[0])
+// console.log(parseRegExpLiteral(/a|b/).pattern.alternatives)
