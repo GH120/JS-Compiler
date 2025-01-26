@@ -80,8 +80,15 @@ export class NonDeterministicAutomata extends Node{
         const nodes = concatenationNode.elements;
 
         const automaton   = this;
-        let lastAutomaton = this;
+
+
+        let lastAutomaton = null;
         let subAutomaton  = new NonDeterministicAutomata();
+
+        //Conecta todos os nós iniciais ao último automato
+        automaton.initialNodes.forEach(initialNode => automaton.addEdge(initialNode, subAutomaton, null))
+
+        automaton.addNode(subAutomaton, NodeType.automaton);
 
         //Para cada nó extrai o subautomato e concatena ele com o último automato
         for (const node of nodes) {
@@ -89,8 +96,10 @@ export class NonDeterministicAutomata extends Node{
             subAutomaton.extractFromRegexNode(node); //Função mais embaixo, a depender do tipo do nó extrai um subautomato diferente
 
             //Concatena o subAutomato na saida do último automato
-            lastAutomaton.addNode(subAutomaton, NodeType.automaton);
-            lastAutomaton.addEdge(lastAutomaton, subAutomaton, null);
+            if(lastAutomaton){
+                lastAutomaton.addNode(subAutomaton, NodeType.automaton);
+                lastAutomaton.addEdge(lastAutomaton, subAutomaton, null);
+            }
 
             lastAutomaton    = subAutomaton;
             subAutomaton     = new NonDeterministicAutomata();
@@ -279,7 +288,7 @@ export class NonDeterministicAutomata extends Node{
         
         //Remove todos os nós automatons
         this.nodes = this.nodes.filter(node => node.type != NodeType.automaton)
-        
+
         this.edges = this.edges.filter(edge => !(edge.to == this || edge.from == this)); //Remove todas as arestas autoreferenciais
 
 
