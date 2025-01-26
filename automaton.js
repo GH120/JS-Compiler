@@ -313,7 +313,7 @@ export class DotGraphConverter {
 
 // // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/(a|b)c/);
+automata.fromRegex(/([a-z])cc/);
 
 automata.extractSubautomata();
 
