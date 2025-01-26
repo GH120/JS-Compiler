@@ -4,6 +4,8 @@ import {
     parseRegExpLiteral
 } from "regexpp";
 
+import fs from 'fs/promises'
+
 const NodeType = {
     initialNode: "initial",
     normalNode: "normal",
@@ -12,7 +14,7 @@ const NodeType = {
     rejection: 4
 };
 
-class Node {
+export class Node {
     constructor() {
         this.id = Node.generateId();
         this.edges = [];
@@ -24,55 +26,114 @@ class Node {
     }
 }
 
-class NonDeterministicAutomata extends Node{
+export class NonDeterministicAutomata extends Node{
     constructor() {
         super();
-        this.initialNodes = [];
-        this.endNodes = [];
+        this.initialNodes = [new Node()];
+        this.endNodes = [new Node()];
         this.nodes = [];
         this.edges = [];
+
+        this.addNode(new Node(), "initial");
+        this.addNode(new Node(), "end");
     }
 
     fromRegex(regex) {
 
         //Rever essa parte, elements depende do tipo visto
         const ast = parseRegExpLiteral(regex);
-        const expressionNodes = ast.pattern.alternatives;
+
+        const alternatives = ast.pattern.alternatives;
+
+        for(const alternative of alternatives){
+
+            this.extractFromRegexNode(alternative);
+        }
+        
+    }
+
+    extractFromRegexNode(regexNode){
+
+        switch (regexNode.type) {
+            case "Character":
+                this.addCharacter(new RegExp(regexNode.raw));
+                break;
+            case "Quantifier":
+                this.addLoop(regexNode);
+                break;
+            case "CapturingGroup":
+                this.addGroup(regexNode);
+                break;
+            case "Alternative":
+                this.addConcatenation(regexNode);
+                break;
+            case "CharacterClass": 
+                this.addCharacterRange(regexNode);
+                break;//[a-e] [b-k]... por exemplo, preencha aqui
+            default:
+                throw new Error(`Unsupported node type: ${regexNode.type}`);
+        }
+    }
+
+    addConcatenation(concatenationNode){
+
+        const nodes = concatenationNode.elements;
+
+        const automaton   = this;
+        let lastAutomaton = this;
+        let subAutomaton  = new NonDeterministicAutomata();
+
+        //Para cada nó extrai o subautomato e concatena ele com o último automato
+        for (const node of nodes) {
+
+            subAutomaton.extractFromRegexNode(node); //Função mais embaixo, a depender do tipo do nó extrai um subautomato diferente
+
+            //Concatena o subAutomato na saida do último automato
+            automaton.addNode(subAutomaton, NodeType.automaton);
+
+            lastAutomaton.addEdge(lastAutomaton.initialNodes[0], subAutomaton, null);
+
+            lastAutomaton    = subAutomaton;
+            subAutomaton     = new NonDeterministicAutomata();
+        }
+
+        automaton.addEdge(lastAutomaton, automaton.endNodes[0], null);
+    }
+
+    addCharacterRange(node){
 
         const automaton = this;
-        
-        processNodes(expressionNodes);
 
-        function processNodes(nodes){
-            
-            for (const node of nodes) {
+        for (const element of node.elements) {
 
-                switch (node.type) {
-                    case "Character":
-                        automaton.addCharacter(new RegExp(node.raw));
-                        break;
-                    case "Quantifier":
-                        automaton.addLoop(node);
-                        break;
-                    case "CapturingGroup":
-                        automaton.addGroup(node);
-                        break;
-                    case "Alternative":
-                        processNodes(node.elements);
-                        break;
-                    default:
-                        throw new Error(`Unsupported node type: ${node.type}`);
+            if (element.type === "Character") {
+                // Adiciona um único caractere como uma transição
+                automaton.addCharacter(new RegExp(element.raw));
+            } else if (element.type === "CharacterClassRange") {
+                // Adiciona transições para cada caractere no intervalo
+                const startChar = element.min.raw.charCodeAt(0);
+                const endChar = element.max.raw.charCodeAt(0);
+                for (let charCode = startChar; charCode <= endChar; charCode++) {
+                    automaton.addCharacter(new RegExp(String.fromCharCode(charCode)));
                 }
+            } else {
+                throw new Error(`Unsupported CharacterClass element type: ${element.type}`);
             }
         }
     }
 
-    addCharacter(char) {
-        const startNode = new Node();
-        const endNode = new Node();
+    addCharacter(char, startNode = null, endNode = null) {
 
-        this.addNode(startNode, NodeType.initialNode);
-        this.addNode(endNode, NodeType.endNode);
+        if(startNode == null){
+            startNode = this.initialNodes[0];
+            this.addNode(startNode, NodeType.initialNode);
+        }
+        
+        if(endNode == null){
+            endNode = this.endNodes[0];
+            this.addNode(endNode, NodeType.endNode);
+        }
+
         this.addEdge(startNode, endNode, char);
     }
 
@@ -85,10 +146,10 @@ class NonDeterministicAutomata extends Node{
 
         switch (type) {
             case NodeType.initialNode:
-                this.initialNodes.push(node);
+                if (!this.nodes.includes(node)) this.initialNodes.push(node);
                 break;
             case NodeType.endNode:
-                this.endNodes.push(node);
+                if (!this.nodes.includes(node)) this.endNodes.push(node);
                 break;
             case NodeType.normalNode:
                 break; // Nós normais já são adicionados por padrão
@@ -203,16 +264,69 @@ class NonDeterministicAutomata extends Node{
     }
 }
 
+export class DotGraphConverter {
+    static toDot(automata) {
+        const lines = ["digraph FNA {"];
+
+        // Define node shapes
+        lines.push(`  node [shape=circle];`);
+        
+        // Add initial nodes with a specific shape
+        for (const node of automata.initialNodes) {
+            lines.push(`  ${node.id} [label="Start" shape=doublecircle];`);
+        }
+
+        // Add end nodes with a specific shape
+        for (const node of automata.endNodes) {
+            lines.push(`  ${node.id} [label="End" shape=doublecircle];`);
+        }
+
+        // Add all other nodes
+        const normalNodes = automata.nodes.filter(
+            node => !automata.initialNodes.includes(node) && !automata.endNodes.includes(node)
+        );
+        for (const node of normalNodes) {
+            lines.push(`  ${node.id} [label="${node.id}"];`);
+        }
+
+        // Add edges
+        for (const edge of automata.edges) {
+            const fromId = edge.from.id;
+            const toId = edge.to.id;
+            const label = edge.value ? edge.value.toString().replace(/"/g, '\\"') : "ε"; // ε for epsilon transitions
+            lines.push(`  ${fromId} -> ${toId} [label="${label}"];`);
+        }
+
+        lines.push("}");
+        return lines.join("\n");
+    }
+}
+
 // // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/(a|b)*/);
+automata.fromRegex(/(a|b)c/);
 
 automata.extractSubautomata();
 
 console.log(automata)
 
+const dotRepresentation = DotGraphConverter.toDot(automata);
+
+// File path
+const filePath = './graph.dot';
+
+// Write the DOT representation to a file
+fs.writeFile(filePath, dotRepresentation, (err) => {
+    if (err) {
+        console.error("Error writing file:", err);
+    } else {
+        console.log(`DOT graph written to ${filePath}`);
+    }
+});
+
+
 // console.log(automata.nodes[2])
 
 //new NonDeterministicAutomata().fromRegex(/a(b|c)*d?/)
 
-// console.log(parseRegExpLiteral(/a|b/).pattern.alternatives)
+// console.log(parseRegExpLiteral(/(a|b)c/).pattern.alternatives[0].elements[0].alternatives)
