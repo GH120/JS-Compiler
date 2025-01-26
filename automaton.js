@@ -18,6 +18,8 @@ export class Node {
     constructor() {
         this.id = Node.generateId();
         this.edges = [];
+        this.out = [];
+        this.in = [];
     }
 
     static generateId() {
@@ -165,7 +167,8 @@ export class NonDeterministicAutomata extends Node{
             throw new Error("Both fromNode and toNode are required to add an edge.");
         }
         
-        // fromNode.edges.push({ to: toNode, value: edgeValue });
+        fromNode.out.push({ to: toNode, value: edgeValue });
+        toNode.in.push({  from: fromNode, value: edgeValue });
 
         this.edges.push({ from: fromNode, to: toNode, value: edgeValue, id:`[${fromNode.id}, ${toNode.id}]`});
     }
@@ -252,15 +255,21 @@ export class NonDeterministicAutomata extends Node{
 
         //Remove todos os nós automatons
         this.nodes = this.nodes.filter(node => node.type != NodeType.automaton)
+
+        this.removeRedundantNodes();
     }
 
-    removeNode(node){
-        this.nodes = this.nodes.filter(node => node != node);
-        this.initialNodes = this.initialNodes.filter(node => node != node);
-        this.endNodes = this.endNodes.filter(node => node != node);
+    removeRedundantNodes(){
+        for(const node of this.nodes){
 
-        this.edges = this.edges.filter(edge => edge.from != node);
-        this.edges = this.edges.filter(edge => edge.to != node);
+            const disconected = node.in.length == 0 && node.out.length == 0;
+
+            if(disconected){
+                this.nodes = this.nodes.filter(n => n != node);
+                this.initialNodes = this.initialNodes.filter(n => n != node);
+                this.endNodes = this.endNodes.filter(n => n != node);
+            }
+        }
     }
 }
 
