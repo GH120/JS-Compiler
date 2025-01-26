@@ -31,13 +31,13 @@ export class Node {
 export class NonDeterministicAutomata extends Node{
     constructor() {
         super();
-        this.initialNodes = [new Node()];
-        this.endNodes = [new Node()];
+        this.initialNodes = [];
+        this.endNodes = [];
         this.nodes = [];
         this.edges = [];
 
-        this.addNode(new Node(), "initial");
-        this.addNode(new Node(), "end");
+        this.addNode(new Node(), NodeType.initialNode);
+        this.addNode(new Node(), NodeType.endNode);
     }
 
     fromRegex(regex) {
@@ -91,9 +91,8 @@ export class NonDeterministicAutomata extends Node{
             subAutomaton.extractFromRegexNode(node); //Função mais embaixo, a depender do tipo do nó extrai um subautomato diferente
 
             //Concatena o subAutomato na saida do último automato
-            automaton.addNode(subAutomaton, NodeType.automaton);
-
-            lastAutomaton.addEdge(lastAutomaton.initialNodes[0], subAutomaton, null);
+            lastAutomaton.addNode(subAutomaton, NodeType.automaton);
+            lastAutomaton.addEdge(lastAutomaton, subAutomaton, null);
 
             lastAutomaton    = subAutomaton;
             subAutomaton     = new NonDeterministicAutomata();
@@ -128,12 +127,10 @@ export class NonDeterministicAutomata extends Node{
 
         if(startNode == null){
             startNode = this.initialNodes[0];
-            this.addNode(startNode, NodeType.initialNode);
         }
         
         if(endNode == null){
             endNode = this.endNodes[0];
-            this.addNode(endNode, NodeType.endNode);
         }
 
         this.addEdge(startNode, endNode, char);
@@ -148,10 +145,10 @@ export class NonDeterministicAutomata extends Node{
 
         switch (type) {
             case NodeType.initialNode:
-                if (!this.nodes.includes(node)) this.initialNodes.push(node);
+                if (!this.initialNodes.includes(node)) this.initialNodes.push(node);
                 break;
             case NodeType.endNode:
-                if (!this.nodes.includes(node)) this.endNodes.push(node);
+                if (!this.endNodes.includes(node)) this.endNodes.push(node);
                 break;
             case NodeType.normalNode:
                 break; // Nós normais já são adicionados por padrão
@@ -163,11 +160,15 @@ export class NonDeterministicAutomata extends Node{
     }
 
     addEdge(fromNode, toNode, edgeValue = null) {
+
+        console.log(fromNode, toNode)
+
         if (!fromNode || !toNode) {
             throw new Error("Both fromNode and toNode are required to add an edge.");
         }
         
         fromNode.out.push({ to: toNode, value: edgeValue });
+
         toNode.in.push({  from: fromNode, value: edgeValue });
 
         this.edges.push({ from: fromNode, to: toNode, value: edgeValue, id:`[${fromNode.id}, ${toNode.id}]`});
@@ -211,48 +212,75 @@ export class NonDeterministicAutomata extends Node{
     //Processa os subautomatos transformando-os em nós e arestas
     extractSubautomata(){
 
+        
+        //Loop para extrair as conexões desse automato
+
+        //Conexões externas
+        for(const edge of this.out){
+
+            const outNode = edge.to;
+
+            this.endNodes.forEach(endNode => this.addEdge(endNode, outNode, edge.value));   
+        }
+
+        for(const edge of this.in){
+
+            const inNode = edge.from;
+
+            this.initialNodes.forEach(initialNode => this.addEdge(inNode, initialNode, edge.value));   
+        }
+
+        this.in  = [];
+        this.out = [];
+
+        this.edges = this.edges.filter(edge => edge.to != this && edge.from != this); //Remove todas as arestas autoreferenciais
+
+
+        //Loop para extrair os subautomatos internos
         for(const node of this.nodes){
 
             
             if(node.type != NodeType.automaton) continue;
             
-            const automaton = node;
+            const subAutomaton = node;
 
-            automaton.extractSubautomata(); //Garante que o automato não terá subautomatos
+            subAutomaton.extractSubautomata(); //Garante que o automato não terá subautomatos
 
 
             //Seleciona arestas conectando a esse automato
-            const edgesConectingToAutomaton = this.edges.filter(edge => edge.to == automaton); 
+            const edgesConectingToAutomaton = this.edges.filter(edge => edge.to == subAutomaton); 
 
             for(const inputEdge of edgesConectingToAutomaton){
 
                 //Adiciona para cada nó de entrada essa aresta
-                automaton.initialNodes.forEach(initialNode => this.addEdge(inputEdge.from, initialNode, inputEdge.value));
+                subAutomaton.initialNodes.forEach(initialNode => this.addEdge(inputEdge.from, initialNode, inputEdge.value));
             }
 
-            this.edges = this.edges.filter(edge => edge.to != automaton); //Remove as arestas conectando a esse automato
+            this.edges = this.edges.filter(edge => edge.to != subAutomaton); //Remove as arestas conectando a esse automato
 
 
             //Seleciona arestas saindo desse automato
-            const edgesFromAutomaton = this.edges.filter(edge => edge.from == automaton); 
+            const edgesFromAutomaton = this.edges.filter(edge => edge.from == subAutomaton); 
 
             for(const outputEdge of edgesFromAutomaton){
 
                 //Adiciona para cada nó de entrada essa aresta
-                automaton.endNodes.forEach(endNode => this.addEdge(endNode, outputEdge.to, outputEdge.value));
+                subAutomaton.endNodes.forEach(endNode => this.addEdge(endNode, outputEdge.to, outputEdge.value));
 
             }
 
         
             //Adiciona arestas e nós do subautomato no automato maior
 
-            automaton.nodes.forEach(node => this.addNode(node, NodeType.normalNode));
+            subAutomaton.nodes.forEach(node => this.addNode(node, NodeType.normalNode));
 
-            this.edges = this.edges.concat(automaton.edges); //Adiciona todas as arestas do subautomato
+            this.edges = this.edges.concat(subAutomaton.edges); //Adiciona todas as arestas do subautomato
 
-            this.edges = this.edges.filter(edge => edge.from != automaton); //Remove as arestas saindo desse subautomato
+            this.edges = this.edges.filter(edge => edge.from != subAutomaton); //Remove as arestas saindo desse subautomato
+            this.edges = this.edges.filter(edge => edge.to   != subAutomaton); //Remove as arestas entrando nesse subautomato
         }
 
+        
         //Remove todos os nós automatons
         this.nodes = this.nodes.filter(node => node.type != NodeType.automaton)
 
@@ -309,32 +337,29 @@ export class DotGraphConverter {
         lines.push("}");
         return lines.join("\n");
     }
+
+    static writeFile(filePath){
+        const dotRepresentation = DotGraphConverter.toDot(automata);
+
+        // Write the DOT representation to a file
+        fs.writeFile(filePath, dotRepresentation, (err) => {
+            if (err) {
+                console.error("Error writing file:", err);
+            } else {
+                console.log(`DOT graph written to ${filePath}`);
+            }
+        });
+    }
 }
 
 // // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/([a-z])cc/);
+automata.fromRegex(/ab/);
 
 automata.extractSubautomata();
 
+DotGraphConverter.writeFile("graph.dot")
 console.log(automata)
-
-const dotRepresentation = DotGraphConverter.toDot(automata);
-
-// File path
-const filePath = './graph.dot';
-
-// Write the DOT representation to a file
-fs.writeFile(filePath, dotRepresentation, (err) => {
-    if (err) {
-        console.error("Error writing file:", err);
-    } else {
-        console.log(`DOT graph written to ${filePath}`);
-    }
-});
-
-
-// console.log(automata.nodes[2])
 
 //new NonDeterministicAutomata().fromRegex(/a(b|c)*d?/)
 

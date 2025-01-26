@@ -3,10 +3,13 @@
 class Lexer{
 
 
+    constructor(rules){
+        this.regexRules = rules;
+    }
 
     read(string){
 
-
+        
     }
 
 }
