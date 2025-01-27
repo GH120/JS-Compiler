@@ -7,6 +7,7 @@ import {
 import { AutomataFactory } from "./automatonFactory.js";
 
 import fs from 'fs/promises'
+import util from 'util';
 
 const NodeType = {
     initialNode: "initial",
@@ -268,6 +269,7 @@ export class NonDeterministicAutomata extends Node{
 
 
         this.removeInvalidEdges();
+        this.removeRedundantEdges()
     }
 
     extractSelfReferentialEdges(){
@@ -396,16 +398,18 @@ export class DotGraphConverter {
 
 // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/abcde/);
+automata.fromRegex(/(a|b)*/);
 
-automata.extractSubautomata();
+automata.nodes[2].extractSubautomata();
+
+
 
 // const automata = new AutomataFactory().fromRegex(/d|a/);
 
 // automata.nodes[2].extractSubautomata();
 
-DotGraphConverter.writeFile("graph.dot", automata)
-console.log(automata.nodes[2])
+DotGraphConverter.writeFile("graph.dot", automata.nodes[2])
+console.log(util.inspect(automata.nodes[2], { showHidden: false, depth: 3, colors: true }))
 
 //new NonDeterministicAutomata().fromRegex(/a(b|c)*d?/)
 
