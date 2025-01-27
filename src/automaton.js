@@ -4,7 +4,7 @@ import {
     parseRegExpLiteral
 } from "regexpp";
 
-import { AutomataFactory } from "./automatonFactory.js";
+import { AutomataFactory } from "../automatonFactory.js";
 
 import fs from 'fs/promises'
 import util from 'util';

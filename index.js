@@ -1,71 +1,56 @@
+import { Lexer } from "./src/lexer.js";
+import { Parser } from "./src/parser.js";
+import { Language } from "./src/language.js";
 
+class Program{
 
-class Lexer{
+    constructor(){
 
-    constructor(settings = {
-        conflictResolution: "Longest Match"
-    }){
+        this.Lexer  = new Lexer({
+                        conflictResolution: "Rule Priority", 
+                        rules: [
+                            { name: 'IF', regex: /if/ },
+                            { name: 'DECLARATION', regex: /let|var/ },
+                            { name: 'WHILE', regex: /while/},
+                            { name: 'THEN', regex: /then/},
+                            { name: 'DO', regex: /do/},
+                            { name: 'ID', regex: /[a-z][a-z0-9]*/ },
+                            { name: 'NUM', regex: /[0-9]+/ },
+                            { name: 'REAL', regex: /([0-9]+"."[0-9]*)|([0-9]*"."[0-9]+)/ },
+                            { name: 'WHITESPACE', regex: /("--"[a-z]*"\n")|(" "|"\n"|"\t")+/ },
+                            { name: 'ASSIGN', regex: /=/ },
+                            { name: 'LPAR', regex: /\(/ },
+                            { name: 'RPAR', regex: /\)/ },
+                            { name: 'MULT', regex: /\*/ },
+                            { name: 'SEMI', regex: /;/},
+                            { name: 'PLUS', regex: /\+/},
+                            { name: 'MINUS', regex: /\-/},
+                            { name: 'GTHAN', regex: />/},
+                            { name: 'LTHAN', regex: /</},
+                            { name: 'LBRKT', regex: /{/},
+                            { name: 'RBRKT', regex: /}/},
+                        ]
+                    });
 
-        //Regras organizadas em ordem de prioridade
-        this.regexRules = [
-            { name: 'IF', regex: /if/ },
-            { name: 'DECLARATION', regex: /let|var/ },
-            { name: 'ID', regex: /[a-z][a-z0-9]*/ },
-            { name: 'NUM', regex: /[0-9]+/ },
-            { name: 'REAL', regex: /([0-9]+"."[0-9]*)|([0-9]*"."[0-9]+)/ },
-            { name: 'WHITESPACE', regex: /("--"[a-z]*"\n")|(" "|"\n"|"\t")+/ },
-            { name: 'ASSIGNMENT', regex: /=/ },
-            { name: 'LPAR', regex: /\(/ },
-            { name: 'RPAR', regex: /\)/ },
-            { name: 'MULT', regex: /\*/ },
-            { name: 'STATEMENT', regex: /;/},
-            { name: 'PLUS', regex: /\+/},
-            { name: 'MINUS', regex: /\-/},
-            
-        ];
-
-        this.settings = settings;
+        this.Parser = new Parser({
+                        language: new Language(
+                            this.Lexer.tokenNames,
+                            
+                        )
+                    });     
     }
 
-    read(string){
+    run(sourceCode){
 
-        console.log(string.split(" ").flatMap(token => this.match(token)))
+        const tokens = this.Lexer.read(sourceCode);
+
+        console.log(this.Parser.parse(tokens));
+
+        return tokens
     }
-
-    match(token){
-
-        const matches = [];
-        
-        for(const rule of this.regexRules){
-            
-            const tokenInteiro = new RegExp('^'+rule.regex.source+'$');
-            const tokenContido = new RegExp('('+rule.regex.source+')');
-
-            if(tokenContido.test(token)){
-
-                if(tokenInteiro.test(token)) matches.push([rule.name, token])
-
-                else{
-
-                    const partesDoToken = token.split(tokenContido).filter(e => e);
-
-                    const subMatches = partesDoToken.flatMap(parte => this.match(parte));
-
-                    return subMatches;
-                }
-            }
-        }
-
-        
-        return [matches[0]]
-    }
-
-
-
 }
 
-class Parser{
-    
-}
+var code1 = "let v =2; v = v + 2; v = v*v + 2*(v-1)";
+var code2 = "while (v < 20) do { if(a > 3) v = k+2}"
 
-new Lexer().read("let v =2; v = v + 2; v = v*v + 2*(v-1)")
+console.log(new Program().run(code2))
