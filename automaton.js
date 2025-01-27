@@ -173,12 +173,14 @@ export class NonDeterministicAutomata extends Node{
         if (!fromNode || !toNode) {
             throw new Error("Both fromNode and toNode are required to add an edge.");
         }
+
+        const edge = { from: fromNode, to: toNode, value: edgeValue, id:`[${fromNode.id}, ${toNode.id}]`};
         
-        fromNode.out.push({ to: toNode, value: edgeValue });
+        fromNode.out.push(edge);
 
-        toNode.in.push({  from: fromNode, value: edgeValue });
+        toNode.in.push(edge);
 
-        this.edges.push({ from: fromNode, to: toNode, value: edgeValue, id:`[${fromNode.id}, ${toNode.id}]`});
+        this.edges.push(edge);
     }
 
     addLoop(node) {
@@ -267,7 +269,9 @@ export class NonDeterministicAutomata extends Node{
         this.edges = this.edges.filter(edge => !(edge.to.type == NodeType.automaton || edge.from.type == NodeType.automaton)); 
 
 
+        this.removeInvalidEdges();
         this.removeRedundantNodes();
+        this.removeRedundantEdges();
     }
 
     extractSelfReferentialEdges(){
@@ -305,6 +309,40 @@ export class NonDeterministicAutomata extends Node{
                 this.initialNodes = this.initialNodes.filter(n => n != node);
                 this.endNodes = this.endNodes.filter(n => n != node);
             }
+        }
+    }
+
+    removeRedundantEdges(){
+
+        const allEmpty = (edges) => edges.every(edge => edge.value == null);
+
+        this.removeRedundantNodes()
+
+        for(const node of this.nodes){
+            
+            if(!allEmpty(node.in) || !allEmpty(node.out)) continue;
+
+            if(node.type == NodeType.initialNode || node.type == NodeType.endNode) continue;
+
+            this.edges = this.edges.filter(edge => !node.in.includes(edge) && !node.out.includes(edge))
+
+            for(const incomingEdge of node.in){
+                for(const outgoingEdge of node.out){
+                    this.addEdge(incomingEdge.from, outgoingEdge.to, null);
+                }
+            }
+        }
+
+        this.removeRedundantNodes();
+        this.removeInvalidEdges();
+    }
+
+    removeInvalidEdges(){
+        //Remove todas as arestas não válidas dos nós
+        for(const node of this.nodes){
+            
+            node.in  = node.in.filter(edge => this.edges.includes(edge));
+            node.out = node.out.filter(edge => this.edges.includes(edge));
         }
     }
 }
@@ -362,10 +400,11 @@ export class DotGraphConverter {
 
 // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/(d|a)/);
+automata.fromRegex(/(d|a)*/);
 
 automata.extractSubautomata();
 
+automata.removeRedundantEdges();
 // const automata = new AutomataFactory().fromRegex(/d|a/);
 
 // automata.nodes[2].extractSubautomata();
