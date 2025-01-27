@@ -7,11 +7,6 @@ export class Parser{
     }){
 
         this.settings = settings;
-
-        this.language = new Language(
-            ["NUM", "REAL", "ID"],
-            [""]
-        )
     }
     
     parse(tokens){

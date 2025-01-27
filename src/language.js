@@ -9,10 +9,21 @@ export class Token{
 
 export class Language{
 
-    constructor(terminals, nonTerminals, productionRules){
+    constructor(terminals, nonTerminals=[], productionRules={}){
 
         this.terminals       = terminals;
         this.nonTerminals    = nonTerminals;
-        this.productionRules = productionRules
+        this.productionRules = productionRules;
+        this.startingSymbol  = "$"
+    }
+
+    addProductionRule(nonTerminal, result){
+
+        if(this.productionRules[nonTerminal] == undefined) 
+                this.productionRules[nonTerminal] = [];
+
+        const currentRules = this.productionRules[nonTerminal];
+
+        currentRules.push(result)
     }
 }

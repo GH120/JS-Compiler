@@ -32,11 +32,19 @@ class Program{
                         ]
                     });
 
+        const language = new Language(this.Lexer.tokenNames, [], []);
+
+        language.addProductionRule("E", ["E", "+", "E"]);
+        language.addProductionRule("E", ["ID"]);
+        language.addProductionRule("E", ["NUM"]);
+        language.addProductionRule("E", ["(", "S","," ,"E", ")"]);
+        language.addProductionRule("S", ["S", ";", "S"]);
+        language.addProductionRule("S", ["ID", ":", "=", "E"]);
+        language.addProductionRule("L", ["E"]);
+        language.addProductionRule("L", ["L", ",", "E"]);
+
         this.Parser = new Parser({
-                        language: new Language(
-                            this.Lexer.tokenNames,
-                            
-                        )
+                        language: language
                     });     
     }
 
