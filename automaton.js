@@ -4,6 +4,8 @@ import {
     parseRegExpLiteral
 } from "regexpp";
 
+import { AutomataFactory } from "./automatonFactory.js";
+
 import fs from 'fs/promises'
 
 const NodeType = {
@@ -261,7 +263,7 @@ export class NonDeterministicAutomata extends Node{
         
         //Remove todos os nós automatons
         this.nodes = this.nodes.filter(node => node.type != NodeType.automaton)
-        
+
         this.edges = this.edges.filter(edge => !(edge.to.type == NodeType.automaton || edge.from.type == NodeType.automaton)); 
 
 
@@ -358,11 +360,13 @@ export class DotGraphConverter {
     }
 }
 
-// // Exemplo de uso
+// Exemplo de uso
 const automata = new NonDeterministicAutomata();
 automata.fromRegex(/(d|a)/);
 
 automata.extractSubautomata();
+
+// const automata = new AutomataFactory().fromRegex(/d|a/);
 
 // automata.nodes[2].extractSubautomata();
 
