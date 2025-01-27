@@ -105,7 +105,7 @@ export class NonDeterministicAutomata extends Node{
             subAutomaton     = new NonDeterministicAutomata();
         }
 
-        automaton.addEdge(lastAutomaton, automaton.endNodes[0], null);
+        automaton.endNodes.forEach(endNode => automaton.addEdge(lastAutomaton, endNode, null));
     }
 
     addCharacterRange(node){
@@ -183,8 +183,8 @@ export class NonDeterministicAutomata extends Node{
         const automata = new NonDeterministicAutomata();
         automata.fromRegex(new RegExp(node.element.raw));
 
-        const startNode = new Node();
-        const endNode = new Node();
+        const startNode = this.initialNodes[0];
+        const endNode   = this.endNodes[0];
 
         this.addNode(startNode, NodeType.initialNode);
         this.addNode(endNode,   NodeType.endNode);
@@ -196,11 +196,8 @@ export class NonDeterministicAutomata extends Node{
     }
 
     addGroup(node) {
-        const startNode = new Node();
-        const endNode = new Node();
-
-        this.addNode(startNode, NodeType.initialNode);
-        this.addNode(endNode,   NodeType.endNode);
+        const startNode = this.initialNodes[0]
+        const endNode   = this.endNodes[0];
 
         for (const alternative of node.alternatives) {
             const automata = new NonDeterministicAutomata();
@@ -216,29 +213,6 @@ export class NonDeterministicAutomata extends Node{
 
     //Processa os subautomatos transformando-os em nós e arestas
     extractSubautomata(){
-
-        
-        //Loop para extrair as conexões desse automato
-
-        //Conexões externas
-        for(const edge of this.out){
-
-            const outNode = edge.to;
-
-            this.endNodes.forEach(endNode => this.addEdge(endNode, outNode, edge.value));   
-        }
-
-        for(const edge of this.in){
-
-            const inNode = edge.from;
-
-            this.initialNodes.forEach(initialNode => this.addEdge(inNode, initialNode, edge.value));   
-        }
-
-        this.in  = [];
-        this.out = [];
-
-        this.edges = this.edges.filter(edge => !(edge.to == this || edge.from == this)); //Remove todas as arestas autoreferenciais
 
 
         //Loop para extrair os subautomatos internos
@@ -280,7 +254,6 @@ export class NonDeterministicAutomata extends Node{
             subAutomaton.nodes.forEach(node => this.addNode(node, NodeType.normalNode));
 
             this.edges = this.edges.concat(subAutomaton.edges); //Adiciona todas as arestas do subautomato
-
             this.edges = this.edges.filter(edge => edge.from != subAutomaton); //Remove as arestas saindo desse subautomato
             this.edges = this.edges.filter(edge => edge.to   != subAutomaton); //Remove as arestas entrando nesse subautomato
         }
@@ -288,11 +261,36 @@ export class NonDeterministicAutomata extends Node{
         
         //Remove todos os nós automatons
         this.nodes = this.nodes.filter(node => node.type != NodeType.automaton)
-
-        this.edges = this.edges.filter(edge => !(edge.to == this || edge.from == this)); //Remove todas as arestas autoreferenciais
+        
+        this.edges = this.edges.filter(edge => !(edge.to.type == NodeType.automaton || edge.from.type == NodeType.automaton)); 
 
 
         this.removeRedundantNodes();
+    }
+
+    extractSelfReferentialEdges(){
+
+        //Loop para extrair as conexões desse automato
+
+        //Conexões externas
+        for(const edge of this.out){
+
+            const outNode = edge.to;
+
+            this.endNodes.forEach(endNode => this.addEdge(endNode, outNode, edge.value));   
+        }
+
+        for(const edge of this.in){
+
+            const inNode = edge.from;
+
+            this.initialNodes.forEach(initialNode => this.addEdge(inNode, initialNode, edge.value));   
+        }
+
+        this.in  = [];
+        this.out = [];
+
+        this.edges = this.edges.filter(edge => !(edge.to == this || edge.from == this)); //Remove todas as arestas autoreferenciais
     }
 
     removeRedundantNodes(){
@@ -346,7 +344,7 @@ export class DotGraphConverter {
         return lines.join("\n");
     }
 
-    static writeFile(filePath){
+    static writeFile(filePath, automata){
         const dotRepresentation = DotGraphConverter.toDot(automata);
 
         // Write the DOT representation to a file
@@ -362,13 +360,13 @@ export class DotGraphConverter {
 
 // // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/ab/);
-
-// automata.extractSubautomata();
+automata.fromRegex(/(d|a)/);
 
 automata.extractSubautomata();
 
-DotGraphConverter.writeFile("graph.dot")
+// automata.nodes[2].extractSubautomata();
+
+DotGraphConverter.writeFile("graph.dot", automata)
 console.log(automata)
 
 //new NonDeterministicAutomata().fromRegex(/a(b|c)*d?/)
