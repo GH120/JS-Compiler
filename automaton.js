@@ -190,8 +190,6 @@ export class NonDeterministicAutomata extends Node{
         const startNode = this.initialNodes[0];
         const endNode   = this.endNodes[0];
 
-        this.addNode(startNode, NodeType.initialNode);
-        this.addNode(endNode,   NodeType.endNode);
         this.addNode(automata,   NodeType.automaton);
 
         this.addEdge(startNode, automata, null);
@@ -270,8 +268,6 @@ export class NonDeterministicAutomata extends Node{
 
 
         this.removeInvalidEdges();
-        this.removeRedundantNodes();
-        this.removeRedundantEdges();
     }
 
     extractSelfReferentialEdges(){
@@ -400,17 +396,16 @@ export class DotGraphConverter {
 
 // Exemplo de uso
 const automata = new NonDeterministicAutomata();
-automata.fromRegex(/(d|a)*/);
+automata.fromRegex(/abcde/);
 
 automata.extractSubautomata();
 
-automata.removeRedundantEdges();
 // const automata = new AutomataFactory().fromRegex(/d|a/);
 
 // automata.nodes[2].extractSubautomata();
 
 DotGraphConverter.writeFile("graph.dot", automata)
-console.log(automata)
+console.log(automata.nodes[2])
 
 //new NonDeterministicAutomata().fromRegex(/a(b|c)*d?/)
 
