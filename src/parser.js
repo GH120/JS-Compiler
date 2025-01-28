@@ -178,6 +178,7 @@ export class LLParser extends Parser{
 
     }
 
+    //Algoritmo pag 49 Modern Compiler Implementation in Java
     computeSets(){
 
         const FIRST  = this.FIRST;
@@ -199,7 +200,9 @@ export class LLParser extends Parser{
         }
 
         //Função autocontida para detectar se houve alteração nos sets
-        const detectChange = this.createChangeDetector();
+        const detectSetsChange = this.createChangeDetector()();
+
+        detectSetsChange();
 
         let i = 0;
 
@@ -221,8 +224,10 @@ export class LLParser extends Parser{
                 }
            }
 
+           console.log(i)
+
            if(i++ > 100) break;
-        } while(detectChange());
+        } while(detectSetsChange());
 
         return this;
     }
@@ -230,6 +235,7 @@ export class LLParser extends Parser{
     //X é a variável do tipo X -> Y1...Yi...Yn
     extractNewSets(X, symbols, i){
 
+        //Meu amigo, um Set sem union é triste
         const union = function(set1, set2){
             return new Set([...set1.keys(), ...set2.keys()]);
         };
@@ -237,7 +243,7 @@ export class LLParser extends Parser{
         const FIRST  = this.FIRST;
         const FOLLOW = this.FOLLOW;
 
-        const Yi = symbols[i]; //Yi,
+        const Yi = symbols[i]; 
         
         // Adiciona FIRST(Yi) ao FIRST(X) se todos os símbolos anteriores forem anuláveis
         if (i === 0 || symbols.slice(0, i).every(symbol => this.nullable.has(symbol))) {
@@ -264,16 +270,32 @@ export class LLParser extends Parser{
 
     createChangeDetector(){
         return () => {
+
+            //Para cada conjunto FIRST[X], retorna seu tamanho e coloca em uma lista
+            //Permite comparar se nenhum ítem foi adicionado ou não
+            const getSetLengthsArray = (object) =>  Object.values(object).map(set => set.size)
+            const equalArrays  = (array1, array2) => array1.length == array2.length && array1.every((item, i) => item == array2[i]);
+
+            //Variáveis de estado da closure
             let nullableLength = this.nullable.length;
-            let firstLength   = this.FIRST.length;
-            let followLength  = this.FOLLOW.length;
+            let previousFirst  = getSetLengthsArray(this.FIRST); 
+            let previousFollow = getSetLengthsArray(this.FOLLOW)
 
+            //Retorna a closure que vai computar se houve ou não mudança
             return () => {
-                if(nullableLength != this.nullable.length) return true;
-                if(firstLength != this.firstLength.length) return true;
-                if(followLength != this.followLength.length) return true;
 
-                return false;
+
+                const noChange = nullableLength == this.nullable.length    &&
+                                 equalArrays(previousFirst,  getSetLengthsArray(this.FIRST)) &&
+                                 equalArrays(previousFollow, getSetLengthsArray(this.FOLLOW));
+
+                if(noChange) return false;
+
+                nullableLength = this.nullable.length;
+                previousFirst  = getSetLengthsArray(this.FIRST); 
+                previousFollow = getSetLengthsArray(this.FOLLOW);
+
+                return true;
             }
         }
     }
