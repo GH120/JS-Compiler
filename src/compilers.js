@@ -81,3 +81,42 @@ export const compiler3 = {
 }
 
 
+
+export const compiler4 = {
+    lexicalRules: [
+        { name: 'PRINT', regex: /print/ },
+        { name: 'BEGIN', regex: /begin/ },
+        { name: 'END', regex: /end/ },
+        { name: 'ID', regex: /[a-z][a-z0-9]*/ },
+        { name: 'NUM', regex: /[0-9]+/ },
+        { name: 'ASSIGN', regex: /=/ },
+        { name: 'LPAR', regex: /\(/ },
+        { name: 'RPAR', regex: /\)/ },
+        { name: 'SEMI', regex: /;/},
+        { name: 'PLUS', regex: /\+/},
+        { name: 'MULT', regex: /\*/},
+        { name: 'MINUS', regex: /\-/},
+        { name: 'DIV', regex: /\//},
+    ],
+    syntaxRules: (language) => {
+
+        language.addProductionRule("E", ["E", "PLUS", "T"])
+        language.addProductionRule("E", ["E", "MINUS", "T"])
+        language.addProductionRule("E", ["T"])
+
+        language.addProductionRule("T", ["T", "MULT", "F"])
+        language.addProductionRule("T", ["T", "DIV", "F"])
+        language.addProductionRule("T", ["F"])
+
+        language.addProductionRule("F", ["ID"])
+        language.addProductionRule("F", ["NUM"])
+        language.addProductionRule("F", ["LPAR", "E", "RPAR"])
+    },
+    parser: PredictiveParser, 
+    phases: 2, 
+    code: [
+        "2*2+(a*b)+(b*c)",
+    ],
+}
+
+

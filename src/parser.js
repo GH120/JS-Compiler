@@ -165,15 +165,17 @@ export class PredictiveParser extends Parser{
 }
 
 
-class LLParser extends Parser{
+export class LLParser extends Parser{
 
     constructor(language){
 
         super(language);
 
-        this.nulable = new Set();
+        this.nullable = new Set();
         this.FIRST   = {};
         this.FOLLOW  = {};
+
+
     }
 
     computeSets(){
@@ -184,7 +186,8 @@ class LLParser extends Parser{
         //Pega todos os terminais e adiciona no conjunto first (geralmente são todos os tokens)
         for(const terminal of this.language.terminals){
 
-            FIRST[terminal] = new Set([terminal]);
+            FIRST [terminal] = new Set([terminal]);
+            FOLLOW[terminal] = new Set();
         }
 
         const nonTerminals = new Set(this.language.productionRules.map(rule => rule.variable));
@@ -198,6 +201,8 @@ class LLParser extends Parser{
         //Função autocontida para detectar se houve alteração nos sets
         const detectChange = this.createChangeDetector();
 
+        let i = 0;
+
         //Enquanto houver mudanças, revisa todas as regras de produção para extrair novas mudanças dos sets
         do{
             for(const production of this.language.productionRules){
@@ -206,51 +211,65 @@ class LLParser extends Parser{
                 const symbols  = production.symbols;
                 
                 //Se todos os símbolos forem anuláveis, então a variável é anulável
-                const everySymbolNulable = symbols.every(symbol => this.nulable.has(symbol));
+                const everySymbolNullable = symbols.every(symbol => this.nullable.has(symbol));
                 
-                if(everySymbolNulable) this.nulable.add(variable);
+                if(everySymbolNullable) this.nullable.add(variable);
                 
                 //Para cada símbolo da Yi da produção X -> Y1 Y2 ... Yk
                 for(let i = 0; i < symbols.length; i++){
                     this.extractNewSets(variable, symbols, i)
                 }
            }
+
+           if(i++ > 100) break;
         } while(detectChange());
+
+        return this;
     }
 
-    extractNewSets(variable, symbols, i){
+    //X é a variável do tipo X -> Y1...Yi...Yn
+    extractNewSets(X, symbols, i){
+
+        const union = function(set1, set2){
+            return new Set([...set1.keys(), ...set2.keys()]);
+        };
 
         const FIRST  = this.FIRST;
         const FOLLOW = this.FOLLOW;
 
-        const currentSymbol = symbols[i]; //Y_i,
-                    
-        // Adiciona FIRST(Y_i) ao FIRST(X) se todos os símbolos anteriores forem anuláveis
+        const Yi = symbols[i]; //Yi,
+        
+        // Adiciona FIRST(Yi) ao FIRST(X) se todos os símbolos anteriores forem anuláveis
         if (i === 0 || symbols.slice(0, i).every(symbol => this.nullable.has(symbol))) {
-            FIRST[variable] = FIRST[variable].union(FIRST[currentSymbol])
+            
+            FIRST[X] = union( FIRST[X], FIRST[Yi]);
         }
         
         // Adiciona FOLLOW(X) ao FOLLOW(Y_i) se todos os símbolos posteriores forem anuláveis
         if (i === symbols.length - 1 || symbols.slice(i + 1).every(symbol => this.nullable.has(symbol))) {
-            FOLLOW[currentSymbol] = FOLLOW[variable].union(FOLLOW[currentSymbol])
+
+            FOLLOW[Yi] = union(FOLLOW[Yi], FOLLOW[X])
         }
         
         // Adiciona FIRST(Y_j) ao FOLLOW(Y_i) para todos os símbolos Y_j após Y_i
         for (let j = i + 1; j < symbols.length; j++) {
             if (symbols.slice(i + 1, j).every(symbol => this.nullable.has(symbol))) {
-                FIRST[symbols[j]] = FIRST[symbols[j]].union(FIRST[variable]);
+
+                const Yj = symbols[j];
+
+                FOLLOW[Yi] = union(FOLLOW[Yi], FIRST[Yj]);
             }
         }
     }
 
     createChangeDetector(){
         return () => {
-            let nulableLength = this.nulable.length;
+            let nullableLength = this.nullable.length;
             let firstLength   = this.FIRST.length;
             let followLength  = this.FOLLOW.length;
 
             return () => {
-                if(nulableLength != this.nulable.length) return true;
+                if(nullableLength != this.nullable.length) return true;
                 if(firstLength != this.firstLength.length) return true;
                 if(followLength != this.followLength.length) return true;
 
