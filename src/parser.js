@@ -18,9 +18,7 @@ export class Parser{
 
         this.S();
 
-        const dotFormat = TreeVisualizer.writeFile("tree.dot",this.syntaxTree);
-        console.log(dotFormat);
-
+        return this.syntaxTree;
     }
 
     getToken(){
@@ -130,7 +128,7 @@ export class PredictiveParser extends Parser{
     }
 }
 
-class TreeVisualizer {
+export class TreeVisualizer {
 
     static treeToDot(obj, nodeId = 0, parentId = null, dotLines = []) {
         const currentNodeId = nodeId;

@@ -1,8 +1,9 @@
 import { Lexer } from "./src/lexer.js";
-import { Parser, PredictiveParser } from "./src/parser.js";
+import { Parser, PredictiveParser, TreeVisualizer } from "./src/parser.js";
 import { Language } from "./src/language.js";
+import util from 'util'
 
-const compilerLanguage1 = {
+const compiler1 = {
     lexicalRules: [
         { name: 'IF', regex: /if/ },
         { name: 'DECLARATION', regex: /let|var/ },
@@ -29,7 +30,7 @@ const compilerLanguage1 = {
     exampleCode2: "while (v < 20) do { if(a > 3) v = k+2}"
 }
 
-const compilerLanguage2 = {
+const compiler2 = {
     lexicalRules: [
         { name: 'PRINT', regex: /print/ },
         { name: 'ID', regex: /[a-z][a-z0-9]*/ },
@@ -46,7 +47,7 @@ const compilerLanguage2 = {
     exampleCode2: "while (v < 20) do { if(a > 3) v = k+2}"
 }
 
-const compilerLanguage3 = {
+const compiler3 = {
     lexicalRules: [
         { name: 'PRINT', regex: /print/ },
         { name: 'BEGIN', regex: /begin/ },
@@ -59,19 +60,7 @@ const compilerLanguage3 = {
         { name: 'SEMI', regex: /;/},
         { name: 'PLUS', regex: /\+/},
     ],
-    exampleCode1: "begin alecrim = dourado; dourado = dourado + alecrim + colorado; print(alecrim) end end end",
-}
-
-class Program{
-
-    constructor(compilerLanguage){
-
-        this.Lexer  = new Lexer({
-                        conflictResolution: "Rule Priority", 
-                        rules: compilerLanguage.lexicalRules
-                    });
-
-        const language = new Language(this.Lexer.tokenNames, [], []);
+    syntaxRules: (language) => {
 
         language.addProductionRule("E", ["E", "+", "T"])
         language.addProductionRule("E", ["E", "-", "T"])
@@ -84,23 +73,46 @@ class Program{
         language.addProductionRule("F", ["ID"])
         language.addProductionRule("F", ["NUM"])
         language.addProductionRule("F", ["(", "E", ")"])
+    },
+    parser: PredictiveParser, 
+    code: "begin alecrim = dourado; dourado = dourado + alecrim + colorado; print(alecrim) end end end",
+}
 
-        this.Parser = new PredictiveParser({
+class Program{
+
+    constructor(compiler){
+
+        //Cria o lexer a partir das regras do compilador
+        this.Lexer  = new Lexer({
+                        conflictResolution: "Rule Priority", 
+                        rules: compiler.lexicalRules
+                    });
+
+        //Cria a linguagem com os tokens da análise léxica sendo os símbolos terminais
+        const language = new Language(this.Lexer.tokenNames, [], []);
+
+        //Aplica as produções para formar as regras de sintaxe da linguagem
+        compiler.syntaxRules(language);
+        
+        //Passa a linguagem para uma instância do parser do compilador
+        this.Parser = new compiler.parser({
                         language: language
                     });    
-                    
-                    
-        console.log(language.productionRules)
     }
 
     run(sourceCode){
 
         const tokens = this.Lexer.read(sourceCode);
 
-        console.log(this.Parser.parse(tokens));
+        console.log("RESULTADO ANÁLISE LÉXICA: ", tokens);
 
-        return tokens
+        const syntaxTree = this.Parser.parse(tokens);
+
+        //Escreve no arquivo a árvore sintática 
+        TreeVisualizer.writeFile("tree.dot", syntaxTree);
+
+        console.log("RESULTADO ANÁLISE SINTÁTICA INSCRITO NO ARQUIVO " + "tree.dot");
     }
 }
 
-console.log(new Program(compilerLanguage3).run(compilerLanguage3.exampleCode1))
+new Program(compiler3).run(compiler3.code);
