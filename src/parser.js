@@ -2,13 +2,51 @@ import { Language } from "./language.js";
 import util from 'util'
 import fs from 'fs'
 
+
+export class TreeVisualizer {
+
+    static treeToDot(obj, nodeId = 0, parentId = null, dotLines = []) {
+        const currentNodeId = nodeId;
+        dotLines.push(`  node${currentNodeId} [label="${obj.value}"];`);
+
+        if (parentId !== null) {
+            dotLines.push(`  node${parentId} -> node${currentNodeId};`);
+        }
+
+        if (Array.isArray(obj.children)) {
+            obj.children.forEach((child, index) => {
+                const childNodeId = `${nodeId}_${index}`;
+                TreeVisualizer.treeToDot(child, childNodeId, currentNodeId, dotLines);
+            });
+        }
+
+        return `digraph G {
+            rankdir=TB; // Tree-like top-bottom orientation
+            node [shape=circle];
+            ${dotLines.join("\n")}
+        }`;
+    }
+
+    static writeFile(filePath, tree) {
+        const dotRepresentation = TreeVisualizer.treeToDot(tree);
+
+        // Write the DOT representation to a file
+        fs.writeFile(filePath, dotRepresentation, (err) => {
+            if (err) {
+                console.error("Error writing file:", err);
+            } else {
+                console.log(`DOT graph written to ${filePath}`);
+            }
+        });
+    }
+}
+
+
 export class Parser{
 
-    constructor(settings = {
-        language: null,
-    }){
+    constructor(language){
 
-        this.settings = settings;
+        this.language = language;
     }
     
     parse(tokens){
@@ -28,10 +66,8 @@ export class Parser{
 
 export class PredictiveParser extends Parser{
 
-    constructor(settings={
-        language:null
-    }){
-        super(settings);
+    constructor(language){
+        super(language);
 
         this.syntaxTree = {value: "Start", children: []};
 
@@ -128,40 +164,98 @@ export class PredictiveParser extends Parser{
     }
 }
 
-export class TreeVisualizer {
 
-    static treeToDot(obj, nodeId = 0, parentId = null, dotLines = []) {
-        const currentNodeId = nodeId;
-        dotLines.push(`  node${currentNodeId} [label="${obj.value}"];`);
+class LLParser extends Parser{
 
-        if (parentId !== null) {
-            dotLines.push(`  node${parentId} -> node${currentNodeId};`);
-        }
+    constructor(language){
 
-        if (Array.isArray(obj.children)) {
-            obj.children.forEach((child, index) => {
-                const childNodeId = `${nodeId}_${index}`;
-                TreeVisualizer.treeToDot(child, childNodeId, currentNodeId, dotLines);
-            });
-        }
+        super(language);
 
-        return `digraph G {
-            rankdir=TB; // Tree-like top-bottom orientation
-            node [shape=circle];
-            ${dotLines.join("\n")}
-        }`;
+        this.nulable = new Set();
+        this.FIRST   = {};
+        this.FOLLOW  = {};
     }
 
-    static writeFile(filePath, tree) {
-        const dotRepresentation = TreeVisualizer.treeToDot(tree);
+    computeSets(){
 
-        // Write the DOT representation to a file
-        fs.writeFile(filePath, dotRepresentation, (err) => {
-            if (err) {
-                console.error("Error writing file:", err);
-            } else {
-                console.log(`DOT graph written to ${filePath}`);
+        const FIRST  = this.FIRST;
+        const FOLLOW = this.FOLLOW;
+
+        //Pega todos os terminais e adiciona no conjunto first (geralmente são todos os tokens)
+        for(const terminal of this.language.terminals){
+
+            FIRST[terminal] = new Set([terminal]);
+        }
+
+        const nonTerminals = new Set(this.language.productionRules.map(rule => rule.variable));
+
+        //Inicializa os conjuntos dos não terminais (variáveis da produção)
+        for(const variable of nonTerminals){
+            FIRST [variable] = new Set();
+            FOLLOW[variable] = new Set();
+        }
+
+        //Função autocontida para detectar se houve alteração nos sets
+        const detectChange = this.createChangeDetector();
+
+        //Enquanto houver mudanças, revisa todas as regras de produção para extrair novas mudanças dos sets
+        do{
+            for(const production of this.language.productionRules){
+                
+                const variable = production.variable;
+                const symbols  = production.symbols;
+                
+                //Se todos os símbolos forem anuláveis, então a variável é anulável
+                const everySymbolNulable = symbols.every(symbol => this.nulable.has(symbol));
+                
+                if(everySymbolNulable) this.nulable.add(variable);
+                
+                //Para cada símbolo da Yi da produção X -> Y1 Y2 ... Yk
+                for(let i = 0; i < symbols.length; i++){
+                    this.extractNewSets(variable, symbols, i)
+                }
+           }
+        } while(detectChange());
+    }
+
+    extractNewSets(variable, symbols, i){
+
+        const FIRST  = this.FIRST;
+        const FOLLOW = this.FOLLOW;
+
+        const currentSymbol = symbols[i]; //Y_i,
+                    
+        // Adiciona FIRST(Y_i) ao FIRST(X) se todos os símbolos anteriores forem anuláveis
+        if (i === 0 || symbols.slice(0, i).every(symbol => this.nullable.has(symbol))) {
+            FIRST[variable] = FIRST[variable].union(FIRST[currentSymbol])
+        }
+        
+        // Adiciona FOLLOW(X) ao FOLLOW(Y_i) se todos os símbolos posteriores forem anuláveis
+        if (i === symbols.length - 1 || symbols.slice(i + 1).every(symbol => this.nullable.has(symbol))) {
+            FOLLOW[currentSymbol] = FOLLOW[variable].union(FOLLOW[currentSymbol])
+        }
+        
+        // Adiciona FIRST(Y_j) ao FOLLOW(Y_i) para todos os símbolos Y_j após Y_i
+        for (let j = i + 1; j < symbols.length; j++) {
+            if (symbols.slice(i + 1, j).every(symbol => this.nullable.has(symbol))) {
+                FIRST[symbols[j]] = FIRST[symbols[j]].union(FIRST[variable]);
             }
-        });
+        }
+    }
+
+    createChangeDetector(){
+        return () => {
+            let nulableLength = this.nulable.length;
+            let firstLength   = this.FIRST.length;
+            let followLength  = this.FOLLOW.length;
+
+            return () => {
+                if(nulableLength != this.nulable.length) return true;
+                if(firstLength != this.firstLength.length) return true;
+                if(followLength != this.followLength.length) return true;
+
+                return false;
+            }
+        }
     }
 }
