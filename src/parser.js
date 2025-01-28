@@ -1,5 +1,6 @@
 import { Language } from "./language.js";
 import util from 'util'
+import fs from 'fs'
 
 export class Parser{
 
@@ -17,6 +18,9 @@ export class Parser{
 
         this.S();
 
+        const dotFormat = TreeVisualizer.writeFile("tree.dot",this.syntaxTree);
+        console.log(dotFormat);
+
     }
 
     getToken(){
@@ -31,9 +35,9 @@ export class PredictiveParser extends Parser{
     }){
         super(settings);
 
-        this.node = {};
+        this.syntaxTree = {value: "Start", children: []};
 
-        this.syntaxTree = {Start: this.node};
+        this.node = this.syntaxTree;
 
     }
 
@@ -41,14 +45,15 @@ export class PredictiveParser extends Parser{
 
         this.token = this.getToken();
 
-        console.log(util.inspect(this.syntaxTree, {depth: 10, colors: true}))
+        // console.log(util.inspect(this.syntaxTree, {depth: 10, colors: true}))
     }
 
     eat(token){
 
         if(this.token.type == token) {
             this.advance();
-            this.node[token] = token;
+
+            this.node.children.push({value: token, children:[]})
         }
 
         else throw Error("Token esperado: " + this.token.type + "; Token recebido " + token);
@@ -58,6 +63,8 @@ export class PredictiveParser extends Parser{
         const node = this.node;
 
         this.addNode("S");
+
+        console.log(util.inspect(this.node, {depth: 10}))
 
         switch(this.token.type){
 
@@ -115,8 +122,48 @@ export class PredictiveParser extends Parser{
 
     addNode(type){
 
-        this.node[type] = {};
+        const child = {value: type, children: []}
 
-        this.node = this.node[type];
+        this.node.children.push(child);
+
+        this.node = child;
+    }
+}
+
+class TreeVisualizer {
+
+    static treeToDot(obj, nodeId = 0, parentId = null, dotLines = []) {
+        const currentNodeId = nodeId;
+        dotLines.push(`  node${currentNodeId} [label="${obj.value}"];`);
+
+        if (parentId !== null) {
+            dotLines.push(`  node${parentId} -> node${currentNodeId};`);
+        }
+
+        if (Array.isArray(obj.children)) {
+            obj.children.forEach((child, index) => {
+                const childNodeId = `${nodeId}_${index}`;
+                TreeVisualizer.treeToDot(child, childNodeId, currentNodeId, dotLines);
+            });
+        }
+
+        return `digraph G {
+            rankdir=TB; // Tree-like top-bottom orientation
+            node [shape=circle];
+            ${dotLines.join("\n")}
+        }`;
+    }
+
+    static writeFile(filePath, tree) {
+        const dotRepresentation = TreeVisualizer.treeToDot(tree);
+
+        // Write the DOT representation to a file
+        fs.writeFile(filePath, dotRepresentation, (err) => {
+            if (err) {
+                console.error("Error writing file:", err);
+            } else {
+                console.log(`DOT graph written to ${filePath}`);
+            }
+        });
     }
 }
