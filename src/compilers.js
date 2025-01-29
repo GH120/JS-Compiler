@@ -203,20 +203,26 @@ export const compiler6 = {
     },
 
     astRules: {
-        S: (children) => children[0], // Ignora EOF
+        S: (node) => node.children[0], // Ignora EOF
 
-        E: (children) => {
-          if (children.length === 1) return children[0]; // Apenas "T"
-          return { 
-            type: "BinaryExpression", 
-            children: [children[0], children[2]] ,
-            operator: children[1], 
-            left: children[0], 
-            right: children[2] 
-          };
+        E: (node) => {
+
+            const children = node.children;
+
+            if (children.length === 1) return children[0]; // Apenas "T"
+            return { 
+                type: "BinaryExpression", 
+                children: [children[0], children[2]] ,
+                operator: children[1], 
+                left: children[0], 
+                right: children[2] 
+            };
         },
 
-        T: (children) => {
+        T: (node) => {
+
+          const children = node.children;
+
           if (children.length === 1) return children[0];
           return { 
             type: "BinaryExpression", 
@@ -227,7 +233,10 @@ export const compiler6 = {
           };
         },
         
-        F: (children) => {
+        F: (node) => {
+
+          const children = node.children;
+
           if (children[0].type === "NUM") 
             return { 
                 type: "Literal", 
@@ -249,7 +258,8 @@ export const compiler6 = {
     phases: 3, 
     code: [
         "2*2+(a*b)+(b*c).",
-        "2*2+4."
+        "2*2+4.",
+        "2."
     ],
 }
 
