@@ -142,15 +142,15 @@ export const compiler5 = {
 
         language.addProductionRule("S", ["E", "EOF"])  
 
-        language.addProductionRule("E", ["T", "E'"])  
-        language.addProductionRule("E'", ["PLUS", "T", "E'"])  
-        language.addProductionRule("E'", ["MINUS", "T", "E'"])  
-        language.addProductionRule("E'", [])  //Vazio significa o epsilon
+        language.addProductionRule("E", ["T", "E1"])  
+        language.addProductionRule("E1", ["PLUS", "T", "E1"])  
+        language.addProductionRule("E1", ["MINUS", "T", "E1"])  
+        language.addProductionRule("E1", [])  //Vazio significa o epsilon
 
-        language.addProductionRule("T", ["F", "T'"])  
-        language.addProductionRule("T'", ["MULT", "F", "T'"])  
-        language.addProductionRule("T'", ["DIV", "F", "T'"])  
-        language.addProductionRule("T'", []) //Vazio significa o epsilon
+        language.addProductionRule("T", ["F", "T1"])  
+        language.addProductionRule("T1", ["MULT", "F", "T1"])  
+        language.addProductionRule("T1", ["DIV", "F", "T1"])  
+        language.addProductionRule("T1", []) //Vazio significa o epsilon
 
         language.addProductionRule("F", ["ID"])  
         language.addProductionRule("F", ["NUM"])  
@@ -187,15 +187,15 @@ export const compiler6 = {
 
         language.addProductionRule("S", ["E", "EOF"])  
 
-        language.addProductionRule("E", ["T", "E'"])  
-        language.addProductionRule("E'", ["PLUS", "T", "E'"])  
-        language.addProductionRule("E'", ["MINUS", "T", "E'"])  
-        language.addProductionRule("E'", [])  //Vazio significa o epsilon
+        language.addProductionRule("E", ["T", "E1"])  
+        language.addProductionRule("E1", ["PLUS", "T", "E1"])  
+        language.addProductionRule("E1", ["MINUS", "T", "E1"])  
+        language.addProductionRule("E1", [])  //Vazio significa o epsilon
 
-        language.addProductionRule("T", ["F", "T'"])  
-        language.addProductionRule("T'", ["MULT", "F", "T'"])  
-        language.addProductionRule("T'", ["DIV", "F", "T'"])  
-        language.addProductionRule("T'", []) //Vazio significa o epsilon
+        language.addProductionRule("T", ["F", "T1"])  
+        language.addProductionRule("T1", ["MULT", "F", "T1"])  
+        language.addProductionRule("T1", ["DIV", "F", "T1"])  
+        language.addProductionRule("T1", []) //Vazio significa o epsilon
 
         language.addProductionRule("F", ["ID"])  
         language.addProductionRule("F", ["NUM"])  
@@ -208,16 +208,56 @@ export const compiler6 = {
         E: (node) => {
 
             const children = node.children;
+  
+            if (children.length === 1) return children[0];
+  
+  
+            const rightOperand = node.children[1];
+  
+            if (rightOperand.type == "E1"){
+                  
+                  if(rightOperand.children.length == 0) return children[0];
+  
+  
+                  return {
+                      type: rightOperand.children[0].type,
+                      children:[
+                          node.children[0],
+                          {
+                              type: "E",
+                              children: [rightOperand.children[1], rightOperand.children[2]]
+                          }
+                  ]
+                  }
+            }
+          
+            return node;
+        },
 
-            if (children.length === 1) return children[0]; // Apenas "T"
+        // Regra para "E'" (A parte que lida com os operadores binários adicionais)
+        E1: (node) => {
+            const children = node.children;
+            // Caso tenha operador binário, cria expressão binária com "E"
 
-            return { 
-                type: "BinaryExpression", 
-                children: [children[0], children[1]] ,
-                operator: children[1], 
-                left: children[0], 
-                right: children[1] 
-            };
+            if (children.length === 1) return children[0];
+
+            console.log(node)
+
+            if(children.length == 0) return node;
+
+
+            const rightOperand = node.children[2];
+
+            if (rightOperand.type == "E1"){
+                    
+                    if(rightOperand.children.length == 0) return children[0];
+
+
+                    return {
+                        type: rightOperand.children[0].type,
+                        children: [rightOperand.children[1], rightOperand.children[2]] 
+                    }
+            }
         },
 
         T: (node) => {
@@ -225,32 +265,64 @@ export const compiler6 = {
           const children = node.children;
 
           if (children.length === 1) return children[0];
-          return { 
-            type: "EXP", 
-            children: [children[0], children[1]], 
-            operator: children[1], 
-            left: children[0], 
-            right: children[1] 
-          };
+
+
+          const rightOperand = node.children[1];
+
+          if (rightOperand.type == "T1"){
+                
+                if(rightOperand.children.length == 0) return children[0];
+
+
+                return {
+                    type: rightOperand.children[0].type,
+                    children:[
+                        node.children[0],
+                        {
+                            type: "T",
+                            children: [rightOperand.children[1], rightOperand.children[2]]
+                        }
+                ]
+                }
+          }
+        
+          return node;
+        },
+
+        // Regra para "T'" (A parte que lida com operadores multiplicativos)
+        T1: (node) => {
+            const children = node.children;
+
+            if(children.length < 1) throw Error();
+
+            if (children.length === 1) return children[0];
+
+            const rightOperand = node.children[2];
+
+            if (rightOperand.type == "T1"){
+                    
+                    if(rightOperand.children.length == 0) return children[0];
+
+                    return {
+                        type: node.children[0].type,
+                        children:[
+                            node.children[1],
+                            {
+                                type: rightOperand.children[0].type,
+                                children: [rightOperand.children[1], rightOperand.children[2]] 
+                            }
+                        ]
+                    }
+            }
         },
         
         F: (node) => {
 
           const children = node.children;
 
-          if (children[0].type === "NUM") 
-            return { 
-                type: "NUMBER", 
-                children:[], 
-                value: parseInt(children[0].token) 
-            };
+          if (children[0].type === "NUM") return children[0]
 
-          if (children[0].type === "ID") 
-            return { 
-                type: "Identifier", 
-                children:[], 
-                name: children[0].token 
-            };
+          if (children[0].type === "ID") return children[0]
 
           return children[1]; // Parenthesized expression
         },

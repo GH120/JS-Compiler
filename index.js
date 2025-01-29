@@ -55,6 +55,7 @@ class Program{
         if(this.phases < SEMANTIC) return;
 
         const AST = this.AST.build(syntaxTree);
+
         console.log(util.inspect(AST, {depth:10}))
 
         TreeVisualizer.writeFile("ast.dot", AST)
@@ -64,6 +65,6 @@ class Program{
 
 const program = new Program(compiler6);
 
-program.run(compiler6.code[2])
+program.run(compiler6.code[0])
 
 // console.log(new LLParser(program.parser.language).computeSets());
