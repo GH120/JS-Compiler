@@ -57,6 +57,6 @@ class Program{
 
 const program = new Program(compiler5);
 
-// program.run(compiler3.code[0])
+program.run(compiler5.code[0])
 
-console.log(new LLParser(program.parser.language).computeSets());
+// console.log(new LLParser(program.parser.language).computeSets());

@@ -136,7 +136,7 @@ export const compiler5 = {
         { name: 'MULT', regex: /\*/},
         { name: 'MINUS', regex: /\-/},
         { name: 'DIV', regex: /\//},
-        { name: 'EOF', regex: /$/},
+        { name: 'EOF', regex: /\./},
     ],
     syntaxRules: (language) => {
 
@@ -159,7 +159,7 @@ export const compiler5 = {
     parser: LLParser, 
     phases: 2, 
     code: [
-        "2*2+(a*b)+(b*c)",
+        "2*2+(a*b)+(b*c).",
     ],
 }
 

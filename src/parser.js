@@ -47,16 +47,13 @@ export class Parser{
     constructor(language){
 
         this.language = language;
+
+        this.syntaxTree = {value: "Start", children: []};
+
     }
     
     parse(tokens){
-        this.tokens = tokens.map(t => t).reverse();
-
-        this.token = this.getToken();
-
-        this.S();
-
-        return this.syntaxTree;
+        
     }
 
     getToken(){
@@ -69,10 +66,18 @@ export class PredictiveParser extends Parser{
     constructor(language){
         super(language);
 
-        this.syntaxTree = {value: "Start", children: []};
 
         this.node = this.syntaxTree;
+    }
 
+    parse(tokens){
+        this.tokens = tokens.map(t => t).reverse();
+
+        this.token = this.getToken();
+
+        this.S();
+
+        return this.syntaxTree;
     }
 
     advance(){
@@ -181,9 +186,65 @@ export class LLParser extends Parser{
         this.FOLLOW  = {};
 
         this.parsingTable = {};
+        this.node = this.syntaxTree; //Nó atual do algoritmo de recursive descent
 
         this.computeSets();
         this.createParsingTable();
+    }
+
+    parse(tokens){
+        this.tokens = tokens.map(t => t).reverse(); //Reverte para o pop funcionar
+
+        this.token = this.getToken();
+
+        this.applySyntaxRule(this.language.startingSymbol);
+
+        return this.syntaxTree;
+    }
+
+    applySyntaxRule(variable){
+
+        //Para construir a árvore, guarda o nó pai na variável
+        const node = this.node;
+
+        this.addNode(variable); //Cria esse nó filho e seta o this.node para apontar para ele
+
+
+        //Escolhe a regra desse par (nãoTerminal, terminal)
+        const rule = this.parsingTable[variable][this.token.type]; 
+
+        const nonTerminals = new Set(this.language.productionRules.map(rule => rule.variable));
+
+        const isNonTerminal = (symbol) => nonTerminals.has(symbol);
+        
+
+        //Para cada simbolo previsto na regra, vê se encaixa recursivamente
+        for(const symbol of rule){
+
+            if(isNonTerminal(symbol)){
+                this.applySyntaxRule(symbol); //Se for não terminal, aplica a regra dessa nova variável
+            }
+            else{
+                this.eat(symbol); //Se for terminal, consome o token e vê se é igual ao token previsto
+            }
+        }
+
+        this.node = node; //Retorna o escopo do nó para o nó pai
+    }
+
+    advance(){
+        this.token = this.getToken();
+    }
+
+    eat(predictedToken){
+
+        if(this.token.type == predictedToken) {
+            this.advance();
+
+            this.node.children.push({value: predictedToken, children:[]})
+        }
+
+        else throw Error("Token esperado: " + predictedToken + "; Token recebido " + this.token.type);
     }
 
     //Algoritmo pag 49 Modern Compiler Implementation in Java
@@ -335,6 +396,7 @@ export class LLParser extends Parser{
         }
     }
 
+    //Computa o conjunto first de uma sequência de símbolos
     computeFirstForSequence(symbols) {
         let firstSet = new Set();
     
@@ -346,6 +408,15 @@ export class LLParser extends Parser{
         }
     
         return firstSet;
+    }
+
+    addNode(type){
+
+        const child = {value: type, children: []}
+
+        this.node.children.push(child);
+
+        this.node = child;
     }
     
 }

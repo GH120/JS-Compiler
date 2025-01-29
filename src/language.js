@@ -9,12 +9,12 @@ export class Token{
 
 export class Language{
 
-    constructor(terminals, nonTerminals=[], productionRules=[]){
+    constructor(terminals, nonTerminals = [], productionRules=[], startingSymbol="S"){
 
         this.terminals       = terminals;
         this.nonTerminals    = nonTerminals;
         this.productionRules = productionRules;
-        this.startingSymbol  = "$"
+        this.startingSymbol  = startingSymbol;
     }
 
     addProductionRule(nonTerminal, result){
