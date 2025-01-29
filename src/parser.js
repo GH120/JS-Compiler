@@ -164,6 +164,11 @@ export class PredictiveParser extends Parser{
     }
 }
 
+//Meu amigo, um Set sem union é triste
+const union = function(set1, set2){
+    return new Set([...set1.keys(), ...set2.keys()]);
+};
+
 
 export class LLParser extends Parser{
 
@@ -175,7 +180,10 @@ export class LLParser extends Parser{
         this.FIRST   = {};
         this.FOLLOW  = {};
 
+        this.parsingTable = {};
 
+        this.computeSets();
+        this.createParsingTable();
     }
 
     //Algoritmo pag 49 Modern Compiler Implementation in Java
@@ -235,11 +243,6 @@ export class LLParser extends Parser{
     //X é a variável do tipo X -> Y1...Yi...Yn
     extractNewSets(X, symbols, i){
 
-        //Meu amigo, um Set sem union é triste
-        const union = function(set1, set2){
-            return new Set([...set1.keys(), ...set2.keys()]);
-        };
-
         const FIRST  = this.FIRST;
         const FOLLOW = this.FOLLOW;
 
@@ -247,6 +250,8 @@ export class LLParser extends Parser{
         
         // Adiciona FIRST(Yi) ao FIRST(X) se todos os símbolos anteriores forem anuláveis
         if (i === 0 || symbols.slice(0, i).every(symbol => this.nullable.has(symbol))) {
+
+            console.log(X, Yi, FIRST[X], FIRST[Yi])
             
             FIRST[X] = union( FIRST[X], FIRST[Yi]);
         }
@@ -262,6 +267,8 @@ export class LLParser extends Parser{
             if (symbols.slice(i + 1, j).every(symbol => this.nullable.has(symbol))) {
 
                 const Yj = symbols[j];
+
+                console.log(Yi, Yj, FOLLOW[Yi], FIRST[Yj])
 
                 FOLLOW[Yi] = union(FOLLOW[Yi], FIRST[Yj]);
             }
@@ -299,4 +306,46 @@ export class LLParser extends Parser{
             }
         }
     }
+
+    //Com os conjuntos FIRST e FOLLOW computados, cria a tabela de parsing
+    createParsingTable(){
+
+        const parsingTable = this.parsingTable;
+
+        for(const production of this.language.productionRules){
+
+            const nonTerminal = production.variable;
+            const symbols     = production.symbols;
+
+            if(!parsingTable[nonTerminal]){
+                parsingTable[nonTerminal] = {};
+            }
+
+            const firstSymbols = this.computeFirstForSequence(symbols);
+
+            for(const terminal of firstSymbols){
+                parsingTable[nonTerminal][terminal] = symbols //.toString() //para melhor legibilidade
+            }
+
+            if (symbols.length === 0) {
+                for (const terminal of this.FOLLOW[nonTerminal]) {
+                    parsingTable[nonTerminal][terminal] = []; // Produção vazia (ε)
+                }
+            }
+        }
+    }
+
+    computeFirstForSequence(symbols) {
+        let firstSet = new Set();
+    
+        for (const symbol of symbols) {
+
+            firstSet = union(firstSet, this.FIRST[symbol]);
+    
+            if (!this.nullable.has(symbol)) break;  // Para se encontrar um símbolo não anulável
+        }
+    
+        return firstSet;
+    }
+    
 }

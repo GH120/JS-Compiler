@@ -1,7 +1,7 @@
 import { Lexer } from "./src/lexer.js";
 import { LLParser, Parser, PredictiveParser, TreeVisualizer } from "./src/parser.js";
 import { Language } from "./src/language.js";
-import { compiler3, compiler4 } from "./src/compilers.js";
+import { compiler3, compiler4, compiler5 } from "./src/compilers.js";
 
 const LEXICAL  = 1;
 const SYNTAX   = 2;
@@ -55,7 +55,7 @@ class Program{
     }
 }
 
-const program = new Program(compiler4);
+const program = new Program(compiler5);
 
 // program.run(compiler3.code[0])
 
