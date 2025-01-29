@@ -9,20 +9,22 @@ export class AbstractSyntaxTree {
     }
   
     build(node) {
-      if (!node || typeof node !== 'object') return node; // Casos básicos
+
+      if (!node || typeof node !== 'object') throw Error()
 
       const transform = this.rules[node.type];
 
+
       if(!transform) {
 
-        node.children.forEach(child => this.build(child));
+        node.children = node.children.map(child => this.build(child));
 
         return node;
       }
       
       const astNode = transform(node);
       
-      astNode.children.forEach(child => this.build(child));
+      astNode.children = astNode.children.map(child => this.build(child));
   
 
       return astNode;

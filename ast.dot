@@ -2,20 +2,14 @@ digraph G {
             rankdir=TB; // Tree-like top-bottom orientation
             node [shape=circle];
               node0 [label="Start"];
-  node0_0 [label="S"];
+  node0_0 [label="E"];
   node0 -> node0_0;
-  node0_0_0 [label="E"];
+  node0_0_0 [label="EXP"];
   node0_0 -> node0_0_0;
-  node0_0_0_0 [label="T"];
+  node0_0_0_0 [label="NUMBER"];
   node0_0_0 -> node0_0_0_0;
-  node0_0_0_0_0 [label="F"];
-  node0_0_0_0 -> node0_0_0_0_0;
-  node0_0_0_0_0_0 [label="NUM"];
-  node0_0_0_0_0 -> node0_0_0_0_0_0;
-  node0_0_0_0_1 [label="T'"];
-  node0_0_0_0 -> node0_0_0_0_1;
-  node0_0_0_1 [label="E'"];
+  node0_0_0_1 [label="T'"];
   node0_0_0 -> node0_0_0_1;
-  node0_0_1 [label="EOF"];
+  node0_0_1 [label="E'"];
   node0_0 -> node0_0_1;
         }

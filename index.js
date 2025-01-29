@@ -55,8 +55,10 @@ class Program{
         if(this.phases < SEMANTIC) return;
 
         const AST = this.AST.build(syntaxTree);
+        console.log(util.inspect(AST, {depth:10}))
 
         TreeVisualizer.writeFile("ast.dot", AST)
+
     }
 }
 

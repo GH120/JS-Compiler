@@ -210,12 +210,13 @@ export const compiler6 = {
             const children = node.children;
 
             if (children.length === 1) return children[0]; // Apenas "T"
+
             return { 
                 type: "BinaryExpression", 
-                children: [children[0], children[2]] ,
+                children: [children[0], children[1]] ,
                 operator: children[1], 
                 left: children[0], 
-                right: children[2] 
+                right: children[1] 
             };
         },
 
@@ -225,11 +226,11 @@ export const compiler6 = {
 
           if (children.length === 1) return children[0];
           return { 
-            type: "BinaryExpression", 
-            children: [children[0], children[2]], 
+            type: "EXP", 
+            children: [children[0], children[1]], 
             operator: children[1], 
             left: children[0], 
-            right: children[2] 
+            right: children[1] 
           };
         },
         
@@ -239,7 +240,7 @@ export const compiler6 = {
 
           if (children[0].type === "NUM") 
             return { 
-                type: "Literal", 
+                type: "NUMBER", 
                 children:[], 
                 value: parseInt(children[0].token) 
             };
