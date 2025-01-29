@@ -160,6 +160,96 @@ export const compiler5 = {
     phases: 2, 
     code: [
         "2*2+(a*b)+(b*c).",
+        "2*2+4."
+    ],
+}
+
+
+//Com árvore de sintaxe abstrata
+export const compiler6 = {
+    lexicalRules: [
+        { name: 'PRINT', regex: /print/ },
+        { name: 'BEGIN', regex: /begin/ },
+        { name: 'END', regex: /end/ },
+        { name: 'ID', regex: /[a-z][a-z0-9]*/ },
+        { name: 'NUM', regex: /[0-9]+/ },
+        { name: 'ASSIGN', regex: /=/ },
+        { name: 'LPAR', regex: /\(/ },
+        { name: 'RPAR', regex: /\)/ },
+        { name: 'SEMI', regex: /;/},
+        { name: 'PLUS', regex: /\+/},
+        { name: 'MULT', regex: /\*/},
+        { name: 'MINUS', regex: /\-/},
+        { name: 'DIV', regex: /\//},
+        { name: 'EOF', regex: /\./},
+    ],
+    syntaxRules: (language) => {
+
+        language.addProductionRule("S", ["E", "EOF"])  
+
+        language.addProductionRule("E", ["T", "E'"])  
+        language.addProductionRule("E'", ["PLUS", "T", "E'"])  
+        language.addProductionRule("E'", ["MINUS", "T", "E'"])  
+        language.addProductionRule("E'", [])  //Vazio significa o epsilon
+
+        language.addProductionRule("T", ["F", "T'"])  
+        language.addProductionRule("T'", ["MULT", "F", "T'"])  
+        language.addProductionRule("T'", ["DIV", "F", "T'"])  
+        language.addProductionRule("T'", []) //Vazio significa o epsilon
+
+        language.addProductionRule("F", ["ID"])  
+        language.addProductionRule("F", ["NUM"])  
+        language.addProductionRule("F", ["LPAR", "E", "RPAR"])  
+    },
+
+    astRules: {
+        S: (children) => children[0], // Ignora EOF
+
+        E: (children) => {
+          if (children.length === 1) return children[0]; // Apenas "T"
+          return { 
+            type: "BinaryExpression", 
+            children: [children[0], children[2]] ,
+            operator: children[1], 
+            left: children[0], 
+            right: children[2] 
+          };
+        },
+
+        T: (children) => {
+          if (children.length === 1) return children[0];
+          return { 
+            type: "BinaryExpression", 
+            children: [children[0], children[2]], 
+            operator: children[1], 
+            left: children[0], 
+            right: children[2] 
+          };
+        },
+        
+        F: (children) => {
+          if (children[0].type === "NUM") 
+            return { 
+                type: "Literal", 
+                children:[], 
+                value: parseInt(children[0].token) 
+            };
+
+          if (children[0].type === "ID") 
+            return { 
+                type: "Identifier", 
+                children:[], 
+                name: children[0].token 
+            };
+
+          return children[1]; // Parenthesized expression
+        },
+    },
+    parser: LLParser, 
+    phases: 3, 
+    code: [
+        "2*2+(a*b)+(b*c).",
+        "2*2+4."
     ],
 }
 

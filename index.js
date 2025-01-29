@@ -1,7 +1,9 @@
 import { Lexer } from "./src/lexer.js";
 import { LLParser, Parser, PredictiveParser, TreeVisualizer } from "./src/parser.js";
 import { Language } from "./src/language.js";
-import { compiler3, compiler4, compiler5 } from "./src/compilers.js";
+import { compiler3, compiler4, compiler5, compiler6 } from "./src/compilers.js";
+import { AbstractSyntaxTree } from "./src/abstractSyntaxTree.js";
+import util from 'util'
 
 const LEXICAL  = 1;
 const SYNTAX   = 2;
@@ -29,7 +31,9 @@ class Program{
         compiler.syntaxRules(language);
         
         //Passa a linguagem para uma instância do parser do compilador
-        this.parser = new compiler.parser(language);    
+        this.parser = new compiler.parser(language);   
+        
+        this.AST = new AbstractSyntaxTree(compiler.astRules);
     }
 
     run(sourceCode){
@@ -50,13 +54,14 @@ class Program{
 
         if(this.phases < SEMANTIC) return;
 
+        const AST = this.AST.build(syntaxTree);
 
-
+        TreeVisualizer.writeFile("ast.dot", AST)
     }
 }
 
-const program = new Program(compiler5);
+const program = new Program(compiler6);
 
-program.run(compiler5.code[0])
+program.run(compiler6.code[0])
 
 // console.log(new LLParser(program.parser.language).computeSets());

@@ -7,7 +7,7 @@ export class TreeVisualizer {
 
     static treeToDot(obj, nodeId = 0, parentId = null, dotLines = []) {
         const currentNodeId = nodeId;
-        dotLines.push(`  node${currentNodeId} [label="${obj.value}"];`);
+        dotLines.push(`  node${currentNodeId} [label="${obj.type}"];`);
 
         if (parentId !== null) {
             dotLines.push(`  node${parentId} -> node${currentNodeId};`);
@@ -48,7 +48,7 @@ export class Parser{
 
         this.language = language;
 
-        this.syntaxTree = {value: "Start", children: []};
+        this.syntaxTree = {type: "Start", children: []};
 
     }
     
@@ -92,7 +92,7 @@ export class PredictiveParser extends Parser{
         if(this.token.type == token) {
             this.advance();
 
-            this.node.children.push({value: token, children:[]})
+            this.node.children.push({type: token, children:[]})
         }
 
         else throw Error("Token esperado: " + this.token.type + "; Token recebido " + token);
@@ -161,7 +161,7 @@ export class PredictiveParser extends Parser{
 
     addNode(type){
 
-        const child = {value: type, children: []}
+        const child = {type: type, children: []}
 
         this.node.children.push(child);
 
@@ -204,7 +204,7 @@ export class LLParser extends Parser{
 
     applySyntaxRule(variable){
 
-        //Para construir a árvore, guarda o nó pai na variável
+        //Para construir a árvore sintática, guarda o nó pai na variável
         const node = this.node;
 
         this.addNode(variable); //Cria esse nó filho e seta o this.node para apontar para ele
@@ -241,7 +241,7 @@ export class LLParser extends Parser{
         if(this.token.type == predictedToken) {
             this.advance();
 
-            this.node.children.push({value: predictedToken, children:[]})
+            this.node.children.push({type: predictedToken, children:[]})
         }
 
         else throw Error("Token esperado: " + predictedToken + "; Token recebido " + this.token.type);
@@ -293,8 +293,6 @@ export class LLParser extends Parser{
                 }
            }
 
-           console.log(i)
-
            if(i++ > 100) break;
         } while(detectSetsChange());
 
@@ -312,8 +310,6 @@ export class LLParser extends Parser{
         // Adiciona FIRST(Yi) ao FIRST(X) se todos os símbolos anteriores forem anuláveis
         if (i === 0 || symbols.slice(0, i).every(symbol => this.nullable.has(symbol))) {
 
-            console.log(X, Yi, FIRST[X], FIRST[Yi])
-            
             FIRST[X] = union( FIRST[X], FIRST[Yi]);
         }
         
@@ -328,8 +324,6 @@ export class LLParser extends Parser{
             if (symbols.slice(i + 1, j).every(symbol => this.nullable.has(symbol))) {
 
                 const Yj = symbols[j];
-
-                console.log(Yi, Yj, FOLLOW[Yi], FIRST[Yj])
 
                 FOLLOW[Yi] = union(FOLLOW[Yi], FIRST[Yj]);
             }
@@ -412,7 +406,7 @@ export class LLParser extends Parser{
 
     addNode(type){
 
-        const child = {value: type, children: []}
+        const child = {type: type, children: []}
 
         this.node.children.push(child);
 
