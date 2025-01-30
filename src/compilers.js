@@ -198,14 +198,15 @@ export const compiler6 = {
         language.addProductionRule("F", ["LPAR", "E", "RPAR"]);
     },
 
-    //Regras que dizem que nó da AST deve ser retornado para cada nó lido da árvore de parsing
+    //Arvore de sintaxe abstrata construída para essa gramática
+    //Caso mude as regras de sintaxe, terá de fazer seu próprio conversor para sintaxe abstrata
     abstractSyntaxTree: new AST1(),
-
     parser: LLParser,
     phases: 3,
     code: [
         "2*2+(a*b)+(b*c).",
         "2*2+4.",
-        "2."
+        "2.",
+        "((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5."
     ],
 };

@@ -67,7 +67,9 @@ export class AST1 extends AbstractSyntaxTree{
   operationOrderInversionRules = {
     PLUS: this.rebalanceTree,
     MULT: this.rebalanceTree,
-    EXP : this.rebalanceTree
+    DIV:  this.rebalanceTree,
+    MINUS: this.rebalanceTree,
+    EXP : this.rebalanceTree,
   }
 
   eliminateMainExpression(node){
@@ -115,7 +117,7 @@ export class AST1 extends AbstractSyntaxTree{
   rebalanceTree(node){
       const leftChild  = node.children[0];
       const rightChild = node.children[1];
-
+      
       if(!rightChild) return node
 
       //Se o filho direito tem apenas um filho, então rebalanceia a árvore
@@ -126,6 +128,10 @@ export class AST1 extends AbstractSyntaxTree{
           children: [leftChild, rightChild.children[0]]
         }
 
+        //Se for um nó do tipo EXP, então pode ser eliminado
+        if(node.type == "EXP") return newRightChild;
+
+        //Se não, retorna o novo nó com um filho só para ser rebalanceado posteriomente
         return {
           type: node.type,
           children: [newRightChild]
