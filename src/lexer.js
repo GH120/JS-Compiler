@@ -4,6 +4,7 @@ export class Lexer{
 
     constructor(settings = {
         conflictResolution: "Longest Match",
+        eliminateNonTokens: true,
         rules: []
     }){
 
@@ -15,7 +16,10 @@ export class Lexer{
 
     read(string){
 
-        return string.split(" ").flatMap(token => this.match(token))
+        return string.split(" ")
+                     .filter(word => !!word)
+                     .flatMap(word => this.match(word))
+                     .filter(token => !!token || !this.settings.eliminateNonTokens)
     }
 
     //Usa rule priority
@@ -30,21 +34,22 @@ export class Lexer{
 
             if(tokenContido.test(word)){
 
-                if(tokenInteiro.test(word)) matches.push(new Token(rule.name, word));
+                if(tokenInteiro.test(word)) matches.push([new Token(rule.name, word)]);
 
                 else{
 
                     const partesDoToken = word.split(tokenContido).filter(e => e);
 
                     const subMatches = partesDoToken.flatMap(parte => this.match(parte));
-
-                    return subMatches;
+                    
+                    matches.push(subMatches);
                 }
             }
         }
 
-        
-        return [matches[0]]
+        //Matches são um array de arrays[[],[],...]
+        //Cada subarray é uma escolha dos tokens que compõem a palavra contígua 
+        return matches[0]
     }
 
     get tokenNames(){

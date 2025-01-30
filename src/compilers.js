@@ -222,7 +222,7 @@ export const compiler7MiniJava =  {
         { name: 'IF', regex: /if/ },
         { name: 'ELSE', regex: /else/ },
         { name: 'WHILE', regex: /while/ },
-        { name: 'PRINT', regex: /System\.out\.println/ },
+        { name: 'PRINT', regex: /System.out.println/ },
         { name: 'RETURN', regex: /return/ },
         { name: 'NEW', regex: /new/ },
         { name: 'INT', regex: /int/ },

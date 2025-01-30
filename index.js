@@ -21,7 +21,8 @@ class Program{
         //Cria o lexer a partir das regras do compilador
         this.lexer  = new Lexer({
                         conflictResolution: "Rule Priority", 
-                        rules: compiler.lexicalRules
+                        rules: compiler.lexicalRules,
+                        eliminateNonTokens: true
                     });
 
         //Cria a linguagem com os tokens da análise léxica sendo os símbolos terminais
