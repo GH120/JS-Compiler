@@ -164,8 +164,6 @@ export const compiler5 = {
     ],
 }
 
-
-//Com árvore de sintaxe abstrata
 export const compiler6 = {
     lexicalRules: [
         { name: 'PRINT', regex: /print/ },
@@ -183,157 +181,116 @@ export const compiler6 = {
         { name: 'DIV', regex: /\//},
         { name: 'EOF', regex: /\./},
     ],
+
     syntaxRules: (language) => {
-
-        language.addProductionRule("S", ["E", "EOF"])  
-
-        language.addProductionRule("E", ["T", "E1"])  
-        language.addProductionRule("E1", ["PLUS", "T", "E1"])  
-        language.addProductionRule("E1", ["MINUS", "T", "E1"])  
-        language.addProductionRule("E1", [])  //Vazio significa o epsilon
-
-        language.addProductionRule("T", ["F", "T1"])  
-        language.addProductionRule("T1", ["MULT", "F", "T1"])  
-        language.addProductionRule("T1", ["DIV", "F", "T1"])  
-        language.addProductionRule("T1", []) //Vazio significa o epsilon
-
-        language.addProductionRule("F", ["ID"])  
-        language.addProductionRule("F", ["NUM"])  
-        language.addProductionRule("F", ["LPAR", "E", "RPAR"])  
+        language.addProductionRule("S", ["E", "EOF"]);
+        language.addProductionRule("E", ["T", "E1"]);
+        language.addProductionRule("E1", ["PLUS", "T", "E1"]);
+        language.addProductionRule("E1", ["MINUS", "T", "E1"]);
+        language.addProductionRule("E1", []); // Epsilon
+        language.addProductionRule("T", ["F", "T1"]);
+        language.addProductionRule("T1", ["MULT", "F", "T1"]);
+        language.addProductionRule("T1", ["DIV", "F", "T1"]);
+        language.addProductionRule("T1", []); // Epsilon
+        language.addProductionRule("F", ["ID"]);
+        language.addProductionRule("F", ["NUM"]);
+        language.addProductionRule("F", ["LPAR", "E", "RPAR"]);
     },
 
     astRules: {
         S: (node) => node.children[0], // Ignora EOF
 
         E: (node) => {
+            
+            if (node.children.length === 1) return node.children[0];
 
-            const children = node.children;
-  
-            if (children.length === 1) return children[0];
-  
-  
-            const rightOperand = node.children[1];
-  
-            if (rightOperand.type == "E1"){
-                  
-                  if(rightOperand.children.length == 0) return children[0];
-  
-  
-                  return {
-                      type: rightOperand.children[0].type,
-                      children:[
-                          node.children[0],
-                          {
-                              type: "E",
-                              children: [rightOperand.children[1], rightOperand.children[2]]
-                          }
-                  ]
-                  }
+            const otherOperation = node.children[1]
+
+            if (otherOperation.children.length == 1){
+                return {
+                    type: otherOperation.type,
+                    children: [node.children[0], otherOperation.children[0]]
+                }
             }
-          
-            return node;
+
+            return {
+                type: "EXP",
+                children: [node.children[0], node.children[1]]
+            };
         },
 
-        // Regra para "E'" (A parte que lida com os operadores binários adicionais)
         E1: (node) => {
-            const children = node.children;
-            // Caso tenha operador binário, cria expressão binária com "E"
 
-            if (children.length === 1) return children[0];
+            if (node.children.length === 0) return node;
 
-            console.log(node)
+            const otherOperation = node.children[2];
 
-            if(children.length == 0) return node;
-
-
-            const rightOperand = node.children[2];
-
-            if (rightOperand.type == "E1"){
-                    
-                    if(rightOperand.children.length == 0) return children[0];
-
-
-                    return {
-                        type: rightOperand.children[0].type,
-                        children: [rightOperand.children[1], rightOperand.children[2]] 
-                    }
+            //Se a outra operação T1 à direita for vazia, retorna o filho esquerdo
+            if(otherOperation.children.length == 0) {
+                return {
+                    type: node.children[0].type,
+                    children: [node.children[1]]
+                }
             }
+
+            return {
+                type: node.children[0].type,
+                children: [node.children[1], node.children[2]]
+            };
         },
 
         T: (node) => {
+            if (node.children.length === 1) return node.children[0];
 
-          const children = node.children;
+            const otherOperation = node.children[1];
 
-          if (children.length === 1) return children[0];
-
-
-          const rightOperand = node.children[1];
-
-          if (rightOperand.type == "T1"){
-                
-                if(rightOperand.children.length == 0) return children[0];
-
-
+            if (otherOperation.children.length == 1){
                 return {
-                    type: rightOperand.children[0].type,
-                    children:[
-                        node.children[0],
-                        {
-                            type: "T",
-                            children: [rightOperand.children[1], rightOperand.children[2]]
-                        }
-                ]
+                    type: otherOperation.type,
+                    children: [node.children[0], otherOperation.children[0]]
                 }
-          }
-        
-          return node;
+            }
+
+            return {
+                type: "TERM",
+                children: [node.children[0], node.children[1]]
+            };
         },
 
-        // Regra para "T'" (A parte que lida com operadores multiplicativos)
         T1: (node) => {
-            const children = node.children;
 
-            if(children.length < 1) throw Error();
+            if (node.children.length === 0) return node;
 
-            if (children.length === 1) return children[0];
+            const otherOperation = node.children[2];
 
-            const rightOperand = node.children[2];
-
-            if (rightOperand.type == "T1"){
-                    
-                    if(rightOperand.children.length == 0) return children[0];
-
-                    return {
-                        type: node.children[0].type,
-                        children:[
-                            node.children[1],
-                            {
-                                type: rightOperand.children[0].type,
-                                children: [rightOperand.children[1], rightOperand.children[2]] 
-                            }
-                        ]
-                    }
+            //Se a outra operação T1 à direita for vazia, retorna o filho esquerdo
+            if(otherOperation.children.length == 0) {
+                return {
+                    type: node.children[0].type,
+                    children: [node.children[1]]
+                }
             }
+
+            return {
+                type: node.children[0].type,
+                children: [node.children[1], node.children[2]]
+            };
         },
         
         F: (node) => {
-
-          const children = node.children;
-
-          if (children[0].type === "NUM") return children[0]
-
-          if (children[0].type === "ID") return children[0]
-
-          return children[1]; // Parenthesized expression
+            const children = node.children;
+            if (children[0].type === "NUM" || children[0].type === "ID") {
+                return children[0];
+            }
+            return children[1]; // Expressão entre parênteses
         },
     },
-    parser: LLParser, 
-    phases: 3, 
+
+    parser: LLParser,
+    phases: 3,
     code: [
         "2*2+(a*b)+(b*c).",
         "2*2+4.",
         "2."
     ],
-}
-
-
+};
