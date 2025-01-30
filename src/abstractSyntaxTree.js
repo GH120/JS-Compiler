@@ -24,7 +24,7 @@ export class AST1 extends AbstractSyntaxTree{
 
     const abstractTree   = this.translate(operationsTree, this.operationOrderInversionRules)
 
-    return operationsTree
+    return abstractTree
   }
 
   
