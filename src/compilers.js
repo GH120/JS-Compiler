@@ -197,6 +197,7 @@ export const compiler6 = {
         language.addProductionRule("F", ["LPAR", "E", "RPAR"]);
     },
 
+    //Regras que dizem que nó da AST deve ser retornado para cada nó lido da árvore de parsing
     astRules: {
         S: (node) => node.children[0], // Ignora EOF
 
@@ -205,6 +206,8 @@ export const compiler6 = {
             if (node.children.length === 1) return node.children[0];
 
             const otherOperation = node.children[1]
+
+            if (otherOperation.children.length == 0) return node.children[0];
 
             if (otherOperation.children.length == 1){
                 return {
@@ -243,6 +246,8 @@ export const compiler6 = {
             if (node.children.length === 1) return node.children[0];
 
             const otherOperation = node.children[1];
+
+            if (otherOperation.children.length == 0) return node.children[0];
 
             if (otherOperation.children.length == 1){
                 return {
