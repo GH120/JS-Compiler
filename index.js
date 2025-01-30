@@ -66,6 +66,6 @@ class Program{
 
 const program = new Program(compiler7MiniJava);
 
-program.run(compiler7MiniJava.code[0])
+program.run(compiler7MiniJava.code[1])
 
 // console.log(new LLParser(program.parser.language).computeSets());

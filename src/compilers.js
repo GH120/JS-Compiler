@@ -302,6 +302,7 @@ export const compiler7MiniJava =  {
       language.addProductionRule("Statement", ["WHILE", "LPAR", "Exp", "RPAR", "Statement"]);
       language.addProductionRule("Statement", ["PRINT", "LPAR", "Exp", "RPAR", "SEMI"]);
       language.addProductionRule("Statement", ["ID", "ASSIGN", "Exp", "SEMI"]);
+      language.addProductionRule("Statement", ["Type","ID", "ASSIGN", "Exp", "SEMI"]);
 
       //Elimina recursão à esquerda do statement
       language.addProductionRule( "Optional", ["ELSE", "Statement"])
