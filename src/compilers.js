@@ -101,6 +101,9 @@ export const compiler4 = {
     ],
     syntaxRules: (language) => {
 
+        language.addProductionRule("E", ["E", "EOF"])
+
+
         language.addProductionRule("E", ["E", "PLUS", "T"])
         language.addProductionRule("E", ["E", "MINUS", "T"])
         language.addProductionRule("E", ["T"])
@@ -160,8 +163,8 @@ export const compiler5 = {
     parser: LLParser, 
     phases: 2, 
     code: [
-        "2*2+(a*b)+(b*c).",
-        "2*2+4."
+        "2*2+(a*b)+(b*c)",
+        "2*2+4"
     ],
 }
 
@@ -204,16 +207,15 @@ export const compiler6 = {
     parser: LLParser,
     phases: 3,
     code: [
-        "2*2+(a*b)+(b*c).",
-        "2*2+4.",
-        "2.",
-        "((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5."
+        "2*2+(a*b)+(b*c)",
+        "2*2+4",
+        "2",
+        "((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5"
     ],
 };
 
 export const compiler7MiniJava =  {
     lexicalRules: [
-        { name: 'EOF', regex: /fim/},
         { name: 'CLASS', regex: /class/ },
         { name: 'EXTENDS', regex: /extends/ },
         { name: 'PUBLIC', regex: /public/ },
@@ -250,6 +252,7 @@ export const compiler7MiniJava =  {
         { name: 'NOT', regex: /!/ },
         { name: 'LBRACK', regex: /\[/ },
         { name: 'RBRACK', regex: /\]/ },
+        { name: 'EOF', regex: /fim/}, //Modificar depois, precisa de algum EOF manual para terminar a execução
       ],
     
     syntaxRules: (language) => {
@@ -330,11 +333,11 @@ export const compiler7MiniJava =  {
           public static void main(Test[] args) {
               System.out.println(5 + 2);
           }
-      } fim`,
+      } `,
       `class Sample {
           public static void main(Sample[] args) {
               int x = 5;
           }
-      } fim`
+      } `
     ]
 };

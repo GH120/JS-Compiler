@@ -5,6 +5,7 @@ export class Lexer{
     constructor(settings = {
         conflictResolution: "Longest Match",
         eliminateNonTokens: true,
+        customEndOfFile: false,
         rules: []
     }){
 
@@ -16,14 +17,17 @@ export class Lexer{
 
     read(string){
 
+        const endOfFile = (this.settings.customEndOfFile)? [] : [new Token("EOF", "temporary")];
+
         return string.split(" ")
                      .filter(word => !!word) //Retira espaços em branco
-                     .flatMap(word => this.match(word))
+                     .flatMap(word => this.match(word)) //Match cada palavra para seus tokens
                      .filter(token => !!token || !this.settings.eliminateNonTokens) //Retira tokens não identificados
                      .map((token, i) => {
                         token.id = i; 
                         return token
                      })
+                     .concat(endOfFile) //Adciona o end of file como o último token
     }
 
     //Usa rule priority
