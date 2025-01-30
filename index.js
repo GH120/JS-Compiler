@@ -1,7 +1,7 @@
 import { Lexer } from "./src/lexer.js";
 import { LLParser, Parser, PredictiveParser, TreeVisualizer } from "./src/parser.js";
 import { Language } from "./src/language.js";
-import { compiler3, compiler4, compiler5, compiler6 } from "./src/compilers.js";
+import { compiler3, compiler4, compiler5, compiler6, compiler7MiniJava } from "./src/compilers.js";
 import { AbstractSyntaxTree } from "./src/abstractSyntaxTree.js";
 import util from 'util'
 
@@ -63,8 +63,8 @@ class Program{
     }
 }
 
-const program = new Program(compiler6);
+const program = new Program(compiler7MiniJava);
 
-program.run(compiler6.code[3])
+program.run(compiler7MiniJava.code[0])
 
 // console.log(new LLParser(program.parser.language).computeSets());

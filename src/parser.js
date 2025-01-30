@@ -310,6 +310,8 @@ export class LLParser extends Parser{
         // Adiciona FIRST(Yi) ao FIRST(X) se todos os símbolos anteriores forem anuláveis
         if (i === 0 || symbols.slice(0, i).every(symbol => this.nullable.has(symbol))) {
 
+            // console.log(FIRST[X], FIRST[Yi], X, Yi)
+
             FIRST[X] = union( FIRST[X], FIRST[Yi]);
         }
         
@@ -324,6 +326,8 @@ export class LLParser extends Parser{
             if (symbols.slice(i + 1, j).every(symbol => this.nullable.has(symbol))) {
 
                 const Yj = symbols[j];
+
+                // console.log(FOLLOW[Yi], FIRST[Yj], Yi, Yj) quando der problemas 
 
                 FOLLOW[Yi] = union(FOLLOW[Yi], FIRST[Yj]);
             }

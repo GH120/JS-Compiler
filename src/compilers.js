@@ -210,3 +210,124 @@ export const compiler6 = {
         "((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5."
     ],
 };
+
+export const compiler7MiniJava =  {
+    lexicalRules: [
+        { name: 'CLASS', regex: /class/ },
+        { name: 'EXTENDS', regex: /extends/ },
+        { name: 'PUBLIC', regex: /public/ },
+        { name: 'STATIC', regex: /static/ },
+        { name: 'VOID', regex: /void/ },
+        { name: 'MAIN', regex: /main/ },
+        { name: 'IF', regex: /if/ },
+        { name: 'ELSE', regex: /else/ },
+        { name: 'WHILE', regex: /while/ },
+        { name: 'PRINT', regex: /System\.out\.println/ },
+        { name: 'RETURN', regex: /return/ },
+        { name: 'NEW', regex: /new/ },
+        { name: 'INT', regex: /int/ },
+        { name: 'BOOLEAN', regex: /boolean/ },
+        { name: 'TRUE', regex: /true/ },
+        { name: 'FALSE', regex: /false/ },
+        { name: 'THIS', regex: /this/ },
+        { name: 'ID', regex: /[a-zA-Z][a-zA-Z0-9]*/ },
+        { name: 'NUM', regex: /[0-9]+/ },
+        { name: 'ASSIGN', regex: /=/ },
+        { name: 'LPAR', regex: /\(/ },
+        { name: 'RPAR', regex: /\)/ },
+        { name: 'LBRACE', regex: /\{/ },
+        { name: 'RBRACE', regex: /\}/ },
+        { name: 'SEMI', regex: /;/ },
+        { name: 'COMMA', regex: /,/ },
+        { name: 'DOT', regex: /\./ },
+        { name: 'PLUS', regex: /\+/ },
+        { name: 'MULT', regex: /\*/ },
+        { name: 'MINUS', regex: /\-/ },
+        { name: 'DIV', regex: /\// },
+        { name: 'LT', regex: /</ },
+        { name: 'AND', regex: /&&/ },
+        { name: 'NOT', regex: /!/ },
+        { name: 'LBRACK', regex: /\[/ },
+        { name: 'RBRACK', regex: /\]/ }
+      ],
+    
+    syntaxRules: (language) => {
+      language.addProductionRule("Program", ["MainClass", "ClassDeclList"]);
+  
+      language.addProductionRule("MainClass", ["CLASS", "ID", "LBRACE", "PUBLIC", "STATIC", "VOID", "MAIN", "LPAR", "ID", "RPAR", "Block", "RBRACE"]);
+  
+      language.addProductionRule("ClassDeclList", ["ClassDecl", "ClassDeclList"]);
+      language.addProductionRule("ClassDeclList", []); // Epsilon
+  
+      language.addProductionRule("ClassDecl", ["CLASS", "ID", "LBRACE", "VarDeclList", "MethodDeclList", "RBRACE"]);
+      language.addProductionRule("ClassDecl", ["CLASS", "ID", "EXTENDS", "ID", "LBRACE", "VarDeclList", "MethodDeclList", "RBRACE"]);
+  
+      language.addProductionRule("VarDeclList", ["VarDecl", "VarDeclList"]);
+      language.addProductionRule("VarDeclList", []); // Epsilon
+  
+      language.addProductionRule("VarDecl", ["Type", "ID", "SEMI"]);
+  
+      language.addProductionRule("MethodDeclList", ["MethodDecl", "MethodDeclList"]);
+      language.addProductionRule("MethodDeclList", []); // Epsilon
+  
+      language.addProductionRule("MethodDecl", ["PUBLIC", "Type", "ID", "LPAR", "FormalList", "RPAR", "Block", "RETURN", "Exp", "SEMI"]);
+  
+      language.addProductionRule("FormalList", ["Formal", "COMMA", "FormalList"]);
+      language.addProductionRule("FormalList", ["Formal"]);
+      language.addProductionRule("FormalList", []); // Epsilon
+  
+      language.addProductionRule("Formal", ["Type", "ID"]);
+  
+      language.addProductionRule("Type", ["INT", "LBRACE", "RBRACE"]);
+      language.addProductionRule("Type", ["BOOLEAN"]);
+      language.addProductionRule("Type", ["ID"]);
+  
+      language.addProductionRule("Block", ["LBRACE", "StatementList", "RBRACE"]);
+  
+      language.addProductionRule("StatementList", ["Statement", "StatementList"]);
+      language.addProductionRule("StatementList", []); // Epsilon
+  
+      language.addProductionRule("Statement", ["Block"]);
+      language.addProductionRule("Statement", ["IF", "LPAR", "Exp", "RPAR", "Statement", "Optional"]);
+      language.addProductionRule("Statement", ["WHILE", "LPAR", "Exp", "RPAR", "Statement"]);
+      language.addProductionRule("Statement", ["PRINT", "LPAR", "Exp", "RPAR", "SEMI"]);
+      language.addProductionRule("Statement", ["ID", "ASSIGN", "Exp", "SEMI"]);
+
+      //Elimina recursão à esquerda do statement
+      language.addProductionRule( "Optional", ["ELSE", "Statement"])
+      language.addProductionRule( "Optional", [])//Epsilon
+  
+      //Partes de expressões, com recursão à esquerda eliminada
+      language.addProductionRule("Exp", ["Term", "ExpPrime"]);
+      language.addProductionRule("ExpPrime", ["PLUS", "Term", "ExpPrime"]);
+      language.addProductionRule("ExpPrime", ["MULT", "Term", "ExpPrime"]);
+      language.addProductionRule("ExpPrime", ["LT", "Term", "ExpPrime"]);
+      language.addProductionRule("ExpPrime", []); // Epsilon
+
+      language.addProductionRule("Term", ["Factor", "TermPrime"]);
+      language.addProductionRule("TermPrime", []); // Epsilon
+
+      language.addProductionRule("Factor", ["NUM"]);
+      language.addProductionRule("Factor", ["TRUE"]);
+      language.addProductionRule("Factor", ["FALSE"]);
+      language.addProductionRule("Factor", ["ID"]);
+      language.addProductionRule("Factor", ["THIS"]);
+      language.addProductionRule("Factor", ["NEW", "ID", "LPAR", "RPAR"]);
+    },
+  
+    abstractSyntaxTree: null, //Ainda não feita
+    parser: LLParser,
+    phases: 1,
+    code: [
+      `class Test {
+          public static void main(Test[] args) {
+              System.out.println(5 + 2);
+          }
+      }`,
+      `class Sample {
+          public static void main(Sample[] args) {
+              int x = 5;
+          }
+      }`
+    ]
+};
