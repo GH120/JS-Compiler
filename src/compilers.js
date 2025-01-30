@@ -1,3 +1,4 @@
+import { AST1 } from "./abstractSyntaxTree.js"
 import { LLParser, PredictiveParser } from "./parser.js"
 
 export const compiler1 = {
@@ -198,98 +199,7 @@ export const compiler6 = {
     },
 
     //Regras que dizem que nó da AST deve ser retornado para cada nó lido da árvore de parsing
-    astRules: {
-        S: (node) => node.children[0], // Ignora EOF
-
-        E: (node) => {
-            
-            if (node.children.length === 1) return node.children[0];
-
-            const otherOperation = node.children[1]
-
-            if (otherOperation.children.length == 0) return node.children[0];
-
-            if (otherOperation.children.length == 1){
-                return {
-                    type: otherOperation.type,
-                    children: [node.children[0], otherOperation.children[0]]
-                }
-            }
-
-            return {
-                type: "EXP",
-                children: [node.children[0], node.children[1]]
-            };
-        },
-
-        E1: (node) => {
-
-            if (node.children.length === 0) return node;
-
-            const otherOperation = node.children[2];
-
-            //Se a outra operação T1 à direita for vazia, retorna o filho esquerdo
-            if(otherOperation.children.length == 0) {
-                return {
-                    type: node.children[0].type,
-                    children: [node.children[1]]
-                }
-            }
-
-            return {
-                type: node.children[0].type,
-                children: [node.children[1], node.children[2]]
-            };
-        },
-
-        T: (node) => {
-            if (node.children.length === 1) return node.children[0];
-
-            const otherOperation = node.children[1];
-
-            if (otherOperation.children.length == 0) return node.children[0];
-
-            if (otherOperation.children.length == 1){
-                return {
-                    type: otherOperation.type,
-                    children: [node.children[0], otherOperation.children[0]]
-                }
-            }
-
-            return {
-                type: "TERM",
-                children: [node.children[0], node.children[1]]
-            };
-        },
-
-        T1: (node) => {
-
-            if (node.children.length === 0) return node;
-
-            const otherOperation = node.children[2];
-
-            //Se a outra operação T1 à direita for vazia, retorna o filho esquerdo
-            if(otherOperation.children.length == 0) {
-                return {
-                    type: node.children[0].type,
-                    children: [node.children[1]]
-                }
-            }
-
-            return {
-                type: node.children[0].type,
-                children: [node.children[1], node.children[2]]
-            };
-        },
-        
-        F: (node) => {
-            const children = node.children;
-            if (children[0].type === "NUM" || children[0].type === "ID") {
-                return children[0];
-            }
-            return children[1]; // Expressão entre parênteses
-        },
-    },
+    abstractSyntaxTree: new AST1(),
 
     parser: LLParser,
     phases: 3,

@@ -33,7 +33,7 @@ class Program{
         //Passa a linguagem para uma instância do parser do compilador
         this.parser = new compiler.parser(language);   
         
-        this.AST = new AbstractSyntaxTree(compiler.astRules);
+        this.AST = compiler.abstractSyntaxTree;
     }
 
     run(sourceCode){
