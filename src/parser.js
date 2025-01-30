@@ -216,7 +216,6 @@ export class LLParser extends Parser{
         const nonTerminals = new Set(this.language.productionRules.map(rule => rule.variable));
 
         const isNonTerminal = (symbol) => nonTerminals.has(symbol);
-        
 
         //Para cada simbolo previsto na regra, vê se encaixa recursivamente
         for(const symbol of rule){

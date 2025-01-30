@@ -17,9 +17,13 @@ export class Lexer{
     read(string){
 
         return string.split(" ")
-                     .filter(word => !!word)
+                     .filter(word => !!word) //Retira espaços em branco
                      .flatMap(word => this.match(word))
-                     .filter(token => !!token || !this.settings.eliminateNonTokens)
+                     .filter(token => !!token || !this.settings.eliminateNonTokens) //Retira tokens não identificados
+                     .map((token, i) => {
+                        token.id = i; 
+                        return token
+                     })
     }
 
     //Usa rule priority

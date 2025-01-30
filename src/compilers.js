@@ -213,6 +213,7 @@ export const compiler6 = {
 
 export const compiler7MiniJava =  {
     lexicalRules: [
+        { name: 'EOF', regex: /fim/},
         { name: 'CLASS', regex: /class/ },
         { name: 'EXTENDS', regex: /extends/ },
         { name: 'PUBLIC', regex: /public/ },
@@ -248,13 +249,16 @@ export const compiler7MiniJava =  {
         { name: 'AND', regex: /&&/ },
         { name: 'NOT', regex: /!/ },
         { name: 'LBRACK', regex: /\[/ },
-        { name: 'RBRACK', regex: /\]/ }
+        { name: 'RBRACK', regex: /\]/ },
       ],
     
     syntaxRules: (language) => {
-      language.addProductionRule("Program", ["MainClass", "ClassDeclList"]);
+
+      language.startingSymbol = "Program"
+
+      language.addProductionRule("Program", ["MainClass", "ClassDeclList", "EOF"]);
   
-      language.addProductionRule("MainClass", ["CLASS", "ID", "LBRACE", "PUBLIC", "STATIC", "VOID", "MAIN", "LPAR", "ID", "RPAR", "Block", "RBRACE"]);
+      language.addProductionRule("MainClass", ["CLASS", "ID", "LBRACE", "PUBLIC", "STATIC", "VOID", "MAIN", "LPAR", "FormalList", "RPAR", "Block", "RBRACE"]);
   
       language.addProductionRule("ClassDeclList", ["ClassDecl", "ClassDeclList"]);
       language.addProductionRule("ClassDeclList", []); // Epsilon
@@ -278,9 +282,12 @@ export const compiler7MiniJava =  {
   
       language.addProductionRule("Formal", ["Type", "ID"]);
   
-      language.addProductionRule("Type", ["INT", "LBRACE", "RBRACE"]);
-      language.addProductionRule("Type", ["BOOLEAN"]);
-      language.addProductionRule("Type", ["ID"]);
+      language.addProductionRule("Type", ["BaseType", "TypePrime"]);
+      language.addProductionRule("TypePrime", ["LBRACK", "RBRACK", "TypePrime"]);
+      language.addProductionRule("TypePrime", []); // Epsilon
+      language.addProductionRule("BaseType", ["INT"]);
+      language.addProductionRule("BaseType", ["BOOLEAN"]);
+      language.addProductionRule("BaseType", ["ID"]);
   
       language.addProductionRule("Block", ["LBRACE", "StatementList", "RBRACE"]);
   
@@ -317,17 +324,17 @@ export const compiler7MiniJava =  {
   
     abstractSyntaxTree: null, //Ainda não feita
     parser: LLParser,
-    phases: 1,
+    phases: 2,
     code: [
       `class Test {
           public static void main(Test[] args) {
               System.out.println(5 + 2);
           }
-      }`,
+      } fim`,
       `class Sample {
           public static void main(Sample[] args) {
               int x = 5;
           }
-      }`
+      } fim`
     ]
 };
