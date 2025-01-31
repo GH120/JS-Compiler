@@ -19,6 +19,9 @@ export class ImperativeSemantics extends SemanticAnalyser{
 
     constructor(){
         super();
+
+        //Hashtable de bindings vai ser implementada como um objeto com array para cada hash
+        this.bindings = {};
     }
 
     analyse(AST){
@@ -32,7 +35,7 @@ export class ImperativeSemantics extends SemanticAnalyser{
 
         if(node.type == "Statement"){
 
-            const assignment = node.children[2] && node.children[2].type == "ASSIGN";
+            const assignment = node.children.some((child) => child.type == "ASSIGN");
 
             if(assignment)
                 this.addBinding(node)
@@ -48,7 +51,11 @@ export class ImperativeSemantics extends SemanticAnalyser{
 
         const result = assignmentNodes[2];
 
-        this.bindings[variable] = this.getType(result)
+
+        //Adiciona o bucket dessa variável se não existir
+        if(!this.bindings[variable]) this.bindings[variable] = [];
+
+        this.bindings[variable].push(this.getType(result))
     }
 
     getType(node){
@@ -61,6 +68,8 @@ export class ImperativeSemantics extends SemanticAnalyser{
             MULT: "INT",
             MINUS: "INT",
             PLUS: "INT",
+            TRUE: "BOOLEAN",
+            FALSE: "BOOLEAN",
             ID: (token)? this.bindings[node.token.value] : undefined //Referência para o binding desse valor
         }
 

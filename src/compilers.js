@@ -398,6 +398,9 @@ export const compiler7MiniJava =  {
                 var sum = a;
                 var sum2 = a + b;
                 var josias = abacate;
+                sum = 22;
+                a = 88;
+                a = true;
                 System.out.println(sum); 
             }
         }
