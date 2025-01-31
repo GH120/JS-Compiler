@@ -23,3 +23,10 @@ export class Language{
 
     }
 }
+
+export class SymbolTable {
+
+    constructor(){
+        this.symbols = {};
+    }
+}

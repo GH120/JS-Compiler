@@ -7,9 +7,10 @@ import util from 'util'
 
 const LEXICAL  = 1;
 const SYNTAX   = 2;
-const SEMANTIC = 3;
-const INTERMEDIATE = 4;
-const ALL = 5;
+const ABSTRACT = 3;
+const SEMANTIC = 4;
+const INTERMEDIATE = 5;
+const ALL = 6;
 
 class Program{
 
@@ -35,16 +36,20 @@ class Program{
         this.parser = new compiler.parser(language);   
         
         this.AST = compiler.abstractSyntaxTree;
+
+        this.semantics = compiler.semantics;
     }
 
     run(sourceCode){
 
+        //Análise léxica
         const tokens = this.lexer.read(sourceCode);
 
         console.log("RESULTADO ANÁLISE LÉXICA: ", tokens);
 
-        if(this.phases < SYNTAX) return;
 
+        //Análise sintática
+        if(this.phases < SYNTAX) return;
 
         const syntaxTree = this.parser.parse(tokens);
 
@@ -53,19 +58,30 @@ class Program{
 
         console.log("RESULTADO ANÁLISE SINTÁTICA INSCRITO NO ARQUIVO " + "tree.dot");
 
-        if(this.phases < SEMANTIC) return;
+        //Construção da árvore abstrata
+        if(this.phases < ABSTRACT) return;
 
         const AST = this.AST.build(syntaxTree);
+
+        console.log("ÁRVORE DE SINTAXE ABSTRATA INSCRITA NO ARQUIVO " + "ast.dot")
 
         console.log(util.inspect(AST, {depth:10}))
 
         TreeVisualizer.writeFile("ast.dot", AST)
+
+        //Análise semântica
+        if(this.phases < SEMANTIC) return;
+
+        console.log("ENVIRONMENTS DA ANÁLISE SEMÂNTICA")
+
+        console.log(util.inspect(this.semantics.analyse(AST), {depth:10}))
+
 
     }
 }
 
 const program = new Program(compiler7MiniJava);
 
-program.run(compiler7MiniJava.code[1])
+program.run(compiler7MiniJava.code[3])
 
 // console.log(new LLParser(program.parser.language).computeSets());

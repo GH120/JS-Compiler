@@ -1,5 +1,6 @@
 import { AST1, MiniJavaAST } from "./abstractSyntaxTree.js"
 import { LLParser, PredictiveParser } from "./parser.js"
+import { ImperativeSemantics } from "./semanticAnalyser.js"
 
 export const compiler1 = {
     lexicalRules: [
@@ -346,9 +347,10 @@ export const compiler7MiniJava =  {
       language.addProductionRule("Factor", ["LPAR", "Exp", "RPAR"]);
     },
   
-    abstractSyntaxTree: new MiniJavaAST(), 
     parser: LLParser,
-    phases: 3,
+    abstractSyntaxTree: new MiniJavaAST(), 
+    semantics: new ImperativeSemantics(),
+    phases: 4,
     code: [
       `class Test {
           public static void main(Test[] args) {
@@ -386,6 +388,19 @@ export const compiler7MiniJava =  {
             }
         }
 
+       `,
+
+       `
+       class ArithmeticExample {
+            public static void main(ArithmeticExample[] args) {
+                var a = 10;
+                var b = 5;
+                var sum = a;
+                var sum2 = a + b;
+                var josias = abacate;
+                System.out.println(sum); 
+            }
+        }
        `
     ]
 };
