@@ -1,6 +1,6 @@
 import { AST1, MiniJavaAST } from "./abstractSyntaxTree.js"
 import { LLParser, PredictiveParser } from "./parser.js"
-import { GlobalSemantics } from "./semanticAnalyser.js"
+import { ImperativeSemantics } from "./semanticAnalyser.js"
 
 export const compiler1 = {
     lexicalRules: [
@@ -316,7 +316,7 @@ export const compiler7MiniJava =  {
       language.addProductionRule("StatementList", []); // Epsilon
   
       language.addProductionRule("Statement", ["Block"]);
-      language.addProductionRule("Statement", ["IF", "LPAR", "Exp", "RPAR", "Statement", "Optional"]);
+      language.addProductionRule("Statement", ["IF", "LPAR", "Exp", "RPAR", "Block", "Optional"]); //Escolhido Block para evitar problema do dangling else
       language.addProductionRule("Statement", ["WHILE", "LPAR", "Exp", "RPAR", "Statement"]);
       language.addProductionRule("Statement", ["PRINT", "LPAR", "Exp", "RPAR", "SEMI"]);
       language.addProductionRule("Statement", ["ID", "ASSIGN", "Exp", "SEMI"]);
@@ -349,7 +349,7 @@ export const compiler7MiniJava =  {
   
     parser: LLParser,
     abstractSyntaxTree: new MiniJavaAST(), 
-    semantics: new GlobalSemantics(),
+    semantics: new ImperativeSemantics(),
     phases: 4,
     code: [
       `class Test {
@@ -395,13 +395,49 @@ export const compiler7MiniJava =  {
             public static void main(ArithmeticExample[] args) {
                 var a = 10;
                 var b = 5;
+                b = true;
                 var sum = a;
+                sum = b;
                 var sum2 = a + b;
 
                 if(a < b){
                     var josias = abacate;
                     sum = 22;
                     a = true;
+                }
+                System.out.println(sum); 
+            }
+        }
+       `,
+
+       `
+       class ArithmeticExample {
+            public static void main(ArithmeticExample[] args) {
+                var a = 10;
+                var b = 5;
+
+                if(a < b){
+                    var a = true;
+                    var b = false;
+                }
+                System.out.println(sum); 
+            }
+        }
+       `,
+
+       `
+       class ArithmeticExample {
+            public static void main(ArithmeticExample[] args) {
+                var a = 10;
+                var b = 5;
+
+                if(a < b){
+                    var c = true;
+                    var d = false;
+                }
+                else {
+                    var c = 2;
+                    var d = 7;
                 }
                 System.out.println(sum); 
             }

@@ -188,12 +188,12 @@ export class LLParser extends Parser{
                 this.applySyntaxRule(symbol,[...parents, symbol]); //Se for não terminal, aplica a regra dessa nova variável
             }
             else{
-                // console.log("EAT " + symbol)
+                console.log("EAT " + symbol)
                 this.eat(symbol); //Se for terminal, consome o token e vê se é igual ao token previsto
             }
         }
 
-        // console.log(variable + " COMPLETE")
+        console.log(variable + " COMPLETE")
 
         this.node = node; //Retorna o escopo do nó para o nó pai
     }

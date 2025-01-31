@@ -16,46 +16,52 @@ export class SemanticAnalyser{
 }
 
 
-export class GlobalSemantics extends SemanticAnalyser{
+export class ImperativeSemantics extends SemanticAnalyser{
 
     constructor(){
         super();
 
-        //Hashtable de bindings vai ser implementada como um objeto com array para cada hash
+        //Hashtable de bindings vai ser implementada como um objeto, onde cada chave terá um bucket linked list
         this.bindings = {};
 
-        this.scopes = []
+        this.scopes = [];
+
+        this.scopeCount = 0;
     }
 
     analyse(AST){
         
-        this.visit(AST);
+        const undo = [] //Array para reverter environment após sair do escopo
 
-        this.scopes.map(bindings => this.detectAmbiguity(bindings))
+        this.visit(AST, undo);
 
         return this.scopes;
     }
 
-    visit(node){
+    visit(node, undo){
 
-        if(node.type == "ClassDecl") 
-            this.beginScope();
+        //Cria um novo array de undo para o novo escopo
+        if(this.scopeNodes[node.type]) {
+            undo = []; 
+        };
 
+
+        //Se for um statement, extrai o binding dele
         if(node.type == "Statement"){
 
             const assignment = node.children.some((child) => child.type == "ASSIGN");
 
-            if(assignment)
-                this.addBinding(node)
+            if(assignment) this.addBinding(node, undo);
         }
 
-        node.children.forEach(child => this.visit(child))
+        //Percorre para todas os nós filhos
+        node.children.forEach(child => this.visit(child, undo))
 
-        if(node.type == "ClassDecl") 
-            this.endScope();
+        //Termina o escopo arquivando ele em this.scopes e revertendo as mudanças com undo
+        if(this.scopeNodes[node.type]) this.endScope(node, undo);
     }
 
-    addBinding(node){
+    addBinding(node, undo){
         const assignmentNodes = node.children.filter(n => n.type != "VAR");
 
         const variable = assignmentNodes[0].token.value;
@@ -66,12 +72,16 @@ export class GlobalSemantics extends SemanticAnalyser{
         //Adiciona o bucket dessa variável se não existir
         if(!this.bindings[variable]) this.bindings[variable] = [];
 
-        this.bindings[variable].push(this.getType(result))
+        this.bindings[variable].push(this.getType(result));
+
+        undo.push(variable); //Adiciona a variável ao undo
     }
 
     getType(node){
 
         const token = node.token;
+
+        const referenceBindings = (token)? this.bindings[node.token.value] : undefined;
 
         const mappings = {
             NUM: "INT",
@@ -79,9 +89,10 @@ export class GlobalSemantics extends SemanticAnalyser{
             MULT: "INT",
             MINUS: "INT",
             PLUS: "INT",
+            LT: "BOOLEAN",
             TRUE: "BOOLEAN",
             FALSE: "BOOLEAN",
-            ID: (token)? this.bindings[node.token.value] : undefined //Referência para o binding desse valor
+            ID: (referenceBindings)? referenceBindings[referenceBindings.length - 1] : undefined //Referência para o binding desse valor
         }
 
         return mappings[node.type]
@@ -89,12 +100,26 @@ export class GlobalSemantics extends SemanticAnalyser{
 
     beginScope(){
 
-        this.bindings = {};
+        // this.scopeCount++;
     }
 
-    endScope(){
+    endScope(node, undo){
 
-        this.scopes.push(this.bindings);
+        //Função para copiar bindings
+        const copiarBindings = (bindings) => Object.fromEntries(
+                                                Object.entries(bindings)
+                                                      .map(entry => [entry[0], [...entry[1]]]) //Copia array de bindings
+                                             );
+
+        this.scopes.push({
+            id: this.scopes.length, 
+            type: node.type,
+            bindings: copiarBindings(this.bindings)
+        });
+
+        this.detectAmbiguity(this.bindings); //Detecta se houve alguma ambiguidade
+
+        undo.forEach(variable => this.bindings[variable].pop()); //Reverte mudanças com undo
 
     }
 
@@ -108,6 +133,11 @@ export class GlobalSemantics extends SemanticAnalyser{
 
             if(binding.some(type => type != mainType)) console.log(`Variável '${key}' recebendo tipo incompatível: ` + binding);
         }
+    }
+
+    scopeNodes = {
+        ClassDecl: true,
+        Block: true,
     }
     
 }
