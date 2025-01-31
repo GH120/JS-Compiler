@@ -1,4 +1,4 @@
-import { AST1 } from "./abstractSyntaxTree.js"
+import { AST1, MiniJavaAST } from "./abstractSyntaxTree.js"
 import { LLParser, PredictiveParser } from "./parser.js"
 
 export const compiler1 = {
@@ -328,11 +328,13 @@ export const compiler7MiniJava =  {
       //Partes de expressões, com recursão à esquerda eliminada
       language.addProductionRule("Exp", ["Term", "ExpPrime"]);
       language.addProductionRule("ExpPrime", ["PLUS", "Term", "ExpPrime"]);
-      language.addProductionRule("ExpPrime", ["MULT", "Term", "ExpPrime"]);
+      language.addProductionRule("ExpPrime", ["MINUS", "Term", "ExpPrime"]);
       language.addProductionRule("ExpPrime", ["LT", "Term", "ExpPrime"]);
       language.addProductionRule("ExpPrime", []); // Epsilon
 
       language.addProductionRule("Term", ["Factor", "TermPrime"]);
+      language.addProductionRule("TermPrime", ["MULT", "Factor", "TermPrime"]);
+      language.addProductionRule("TermPrime", ["DIV", "Factor", "TermPrime"]);
       language.addProductionRule("TermPrime", []); // Epsilon
 
       language.addProductionRule("Factor", ["NUM"]);
@@ -341,11 +343,12 @@ export const compiler7MiniJava =  {
       language.addProductionRule("Factor", ["ID"]);
       language.addProductionRule("Factor", ["THIS"]);
       language.addProductionRule("Factor", ["NEW", "ID", "LPAR", "RPAR"]);
+      language.addProductionRule("Factor", ["LPAR", "Exp", "RPAR"]);
     },
   
-    abstractSyntaxTree: null, //Ainda não feita
+    abstractSyntaxTree: new MiniJavaAST(), 
     parser: LLParser,
-    phases: 2,
+    phases: 3,
     code: [
       `class Test {
           public static void main(Test[] args) {
@@ -354,7 +357,7 @@ export const compiler7MiniJava =  {
       } `,
       `class Sample {
           public static void main(Sample[] args) {
-              var x = 5;
+              var x = ((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5;
           }
       } `,
        `

@@ -217,7 +217,7 @@ export class LLParser extends Parser{
 
         const isNonTerminal = (symbol) => nonTerminals.has(symbol);
 
-        // console.log(variable, this.token, rule, parents)
+        console.log(variable, this.token, rule, parents)
 
         //Para cada simbolo previsto na regra, vê se encaixa recursivamente
         for(const symbol of rule){
