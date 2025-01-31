@@ -1,6 +1,6 @@
 import { AST1, MiniJavaAST } from "./abstractSyntaxTree.js"
 import { LLParser, PredictiveParser } from "./parser.js"
-import { ImperativeSemantics } from "./semanticAnalyser.js"
+import { GlobalSemantics } from "./semanticAnalyser.js"
 
 export const compiler1 = {
     lexicalRules: [
@@ -349,7 +349,7 @@ export const compiler7MiniJava =  {
   
     parser: LLParser,
     abstractSyntaxTree: new MiniJavaAST(), 
-    semantics: new ImperativeSemantics(),
+    semantics: new GlobalSemantics(),
     phases: 4,
     code: [
       `class Test {
@@ -397,10 +397,12 @@ export const compiler7MiniJava =  {
                 var b = 5;
                 var sum = a;
                 var sum2 = a + b;
-                var josias = abacate;
-                sum = 22;
-                a = 88;
-                a = true;
+
+                if(a < b){
+                    var josias = abacate;
+                    sum = 22;
+                    a = true;
+                }
                 System.out.println(sum); 
             }
         }

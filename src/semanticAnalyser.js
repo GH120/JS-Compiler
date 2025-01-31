@@ -2,6 +2,7 @@ export class SemanticAnalyser{
 
     constructor(){
         this.bindings = {};
+        this.scopes   = [];
     }
 
     analyse(AST){
@@ -15,23 +16,30 @@ export class SemanticAnalyser{
 }
 
 
-export class ImperativeSemantics extends SemanticAnalyser{
+export class GlobalSemantics extends SemanticAnalyser{
 
     constructor(){
         super();
 
         //Hashtable de bindings vai ser implementada como um objeto com array para cada hash
         this.bindings = {};
+
+        this.scopes = []
     }
 
     analyse(AST){
         
         this.visit(AST);
 
-        return this.bindings;
+        this.scopes.map(bindings => this.detectAmbiguity(bindings))
+
+        return this.scopes;
     }
 
     visit(node){
+
+        if(node.type == "ClassDecl") 
+            this.beginScope();
 
         if(node.type == "Statement"){
 
@@ -42,6 +50,9 @@ export class ImperativeSemantics extends SemanticAnalyser{
         }
 
         node.children.forEach(child => this.visit(child))
+
+        if(node.type == "ClassDecl") 
+            this.endScope();
     }
 
     addBinding(node){
@@ -74,6 +85,29 @@ export class ImperativeSemantics extends SemanticAnalyser{
         }
 
         return mappings[node.type]
+    }
+
+    beginScope(){
+
+        this.bindings = {};
+    }
+
+    endScope(){
+
+        this.scopes.push(this.bindings);
+
+    }
+
+    detectAmbiguity(bindings){
+
+        for(const [key, binding] of Object.entries(bindings)){
+
+            if(!binding[0]) return console.log(`Variável '${key}' recebendo variável não declarada `);
+
+            const mainType = binding[0];
+
+            if(binding.some(type => type != mainType)) console.log(`Variável '${key}' recebendo tipo incompatível: ` + binding);
+        }
     }
     
 }
