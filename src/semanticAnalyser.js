@@ -127,7 +127,12 @@ export class ImperativeSemantics extends SemanticAnalyser{
 
         for(const [key, binding] of Object.entries(bindings)){
 
-            if(!binding[0]) return console.log(`Variável '${key}' recebendo variável não declarada `);
+            if(binding.length == 0) continue;
+
+            if(binding.some(bind => bind == undefined)) { //Se o binding não for definido
+                console.log(`Variável '${key}' recebendo variável não declarada `);
+                continue;
+            }
 
             const mainType = binding[0];
 

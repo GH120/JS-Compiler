@@ -433,11 +433,13 @@ export const compiler7MiniJava =  {
 
                 if(a < b){
                     var c = true;
+                    var b = true;
                     var d = false;
                 }
                 else {
                     var c = 2;
                     var d = 7;
+                    var k = baltazar;
                 }
                 System.out.println(sum); 
             }
