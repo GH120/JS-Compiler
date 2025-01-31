@@ -205,6 +205,9 @@ export class MiniJavaAST extends AbstractSyntaxTree{
 
       return EXP;
     },
+
+    Program: (node) => {return {type: "Program", children: [node.children[0]]}},
+    Start: (node) => node.children[0],
   }
 
   operationOrderInversionRules = {
