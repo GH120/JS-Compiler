@@ -202,7 +202,7 @@ export class LLParser extends Parser{
         return this.syntaxTree;
     }
 
-    applySyntaxRule(variable){
+    applySyntaxRule(variable, parents=[]){
 
         //Para construir a árvore sintática, guarda o nó pai na variável
         const node = this.node;
@@ -217,18 +217,22 @@ export class LLParser extends Parser{
 
         const isNonTerminal = (symbol) => nonTerminals.has(symbol);
 
-        console.log(variable, this.token)
+        // console.log(variable, this.token, rule, parents)
 
         //Para cada simbolo previsto na regra, vê se encaixa recursivamente
         for(const symbol of rule){
 
             if(isNonTerminal(symbol)){
-                this.applySyntaxRule(symbol); //Se for não terminal, aplica a regra dessa nova variável
+                
+                this.applySyntaxRule(symbol,[...parents, symbol]); //Se for não terminal, aplica a regra dessa nova variável
             }
             else{
+                // console.log("EAT " + symbol)
                 this.eat(symbol); //Se for terminal, consome o token e vê se é igual ao token previsto
             }
         }
+
+        // console.log(variable + " COMPLETE")
 
         this.node = node; //Retorna o escopo do nó para o nó pai
     }

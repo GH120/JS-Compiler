@@ -215,6 +215,10 @@ export const compiler6 = {
 };
 
 export const compiler7MiniJava =  {
+
+    preProcessing: [
+        { name: 'COMMENT', regex: /\/\/.*\n/}
+    ],
     lexicalRules: [
         { name: 'CLASS', regex: /class/ },
         { name: 'EXTENDS', regex: /extends/ },
@@ -228,6 +232,7 @@ export const compiler7MiniJava =  {
         { name: 'PRINT', regex: /System.out.println/ },
         { name: 'RETURN', regex: /return/ },
         { name: 'NEW', regex: /new/ },
+        { name: 'VAR', regex: /var/ },
         { name: 'INT', regex: /int/ },
         { name: 'BOOLEAN', regex: /boolean/ },
         { name: 'TRUE', regex: /true/ },
@@ -259,39 +264,51 @@ export const compiler7MiniJava =  {
 
       language.startingSymbol = "Program"
 
-      language.addProductionRule("Program", ["MainClass", "ClassDeclList", "EOF"]);
+      language.addProductionRule("Program", [ "ClassDeclList", "EOF"]);
   
-      language.addProductionRule("MainClass", ["CLASS", "ID", "LBRACE", "PUBLIC", "STATIC", "VOID", "MAIN", "LPAR", "FormalList", "RPAR", "Block", "RBRACE"]);
-  
+      //Gramática das classes
       language.addProductionRule("ClassDeclList", ["ClassDecl", "ClassDeclList"]);
       language.addProductionRule("ClassDeclList", []); // Epsilon
   
-      language.addProductionRule("ClassDecl", ["CLASS", "ID", "LBRACE", "VarDeclList", "MethodDeclList", "RBRACE"]);
-      language.addProductionRule("ClassDecl", ["CLASS", "ID", "EXTENDS", "ID", "LBRACE", "VarDeclList", "MethodDeclList", "RBRACE"]);
+      language.addProductionRule("ClassDecl",  ["CLASS", "ID", "SuperClass", "LBRACE", "VarDeclList","PUBLIC", "MainMethod", "MethodDeclList", "RBRACE"]);
+
+      language.addProductionRule("SuperClass", ["EXTENDS", "ID"])
+      language.addProductionRule("SuperClass", []) //Epsilon
   
       language.addProductionRule("VarDeclList", ["VarDecl", "VarDeclList"]);
       language.addProductionRule("VarDeclList", []); // Epsilon
   
       language.addProductionRule("VarDecl", ["Type", "ID", "SEMI"]);
   
+
+      //Gramática de métodos
+
       language.addProductionRule("MethodDeclList", ["MethodDecl", "MethodDeclList"]);
       language.addProductionRule("MethodDeclList", []); // Epsilon
+
+      language.addProductionRule("MainMethod", [ "STATIC", "VOID", "MAIN", "LPAR", "FormalList", "RPAR", "Block"])
+      language.addProductionRule("MainMethod", []) //Epsilon
   
-      language.addProductionRule("MethodDecl", ["PUBLIC", "Type", "ID", "LPAR", "FormalList", "RPAR", "Block", "RETURN", "Exp", "SEMI"]);
+      language.addProductionRule("MethodDecl", ["PUBLIC", "Type", "ID", "LPAR", "FormalList", "RPAR", "Block", "ReturnType"]);
+      language.addProductionRule("ReturnType", ["RETURN", "Exp", "SEMI"])
+      language.addProductionRule("ReturnType", []);
   
       language.addProductionRule("FormalList", ["Formal", "COMMA", "FormalList"]);
       language.addProductionRule("FormalList", ["Formal"]);
       language.addProductionRule("FormalList", []); // Epsilon
   
       language.addProductionRule("Formal", ["Type", "ID"]);
-  
-      language.addProductionRule("Type", ["BaseType", "TypePrime"]);
-      language.addProductionRule("TypePrime", ["LBRACK", "RBRACK", "TypePrime"]);
-      language.addProductionRule("TypePrime", []); // Epsilon
+
+      //Gramática de tipos primitivos e arrays
+      language.addProductionRule("Type", ["BaseType", "Array"]);
+      language.addProductionRule("Array", ["LBRACK", "RBRACK", "Array"]);
+      language.addProductionRule("Array", []); // Epsilon
       language.addProductionRule("BaseType", ["INT"]);
       language.addProductionRule("BaseType", ["BOOLEAN"]);
       language.addProductionRule("BaseType", ["ID"]);
   
+
+      //Gramática de Statements
       language.addProductionRule("Block", ["LBRACE", "StatementList", "RBRACE"]);
   
       language.addProductionRule("StatementList", ["Statement", "StatementList"]);
@@ -302,7 +319,7 @@ export const compiler7MiniJava =  {
       language.addProductionRule("Statement", ["WHILE", "LPAR", "Exp", "RPAR", "Statement"]);
       language.addProductionRule("Statement", ["PRINT", "LPAR", "Exp", "RPAR", "SEMI"]);
       language.addProductionRule("Statement", ["ID", "ASSIGN", "Exp", "SEMI"]);
-      language.addProductionRule("Statement", ["Type","ID", "ASSIGN", "Exp", "SEMI"]);
+      language.addProductionRule("Statement", ["VAR","ID", "ASSIGN", "Exp", "SEMI"]); //DECLARAÇÃO APENAS COM 'VAR', LIMITAÇÃO DA AMBIGUIDADE TYPE ID
 
       //Elimina recursão à esquerda do statement
       language.addProductionRule( "Optional", ["ELSE", "Statement"])
@@ -337,8 +354,35 @@ export const compiler7MiniJava =  {
       } `,
       `class Sample {
           public static void main(Sample[] args) {
-              int x = 5;
+              var x = 5;
           }
-      } `
+      } `,
+       `
+        class HelloWorld {
+            public static void main(HelloWorld[] args) {
+                System.out.println(42); 
+            }
+        }
+
+        class ArithmeticExample {
+            public static void main(ArithmeticExample[] args) {
+                var a = 10;
+                var b = 5;
+                var sum = a + b;
+                System.out.println(sum); 
+            }
+        }
+
+        class WhileLoopExample {
+            public static void main(WhileLoopExample[] args) {
+                var count = 0;
+                while (count < 3) {
+                    System.out.println(count); 
+                    count = count + 1;
+                }
+            }
+        }
+
+       `
     ]
 };
