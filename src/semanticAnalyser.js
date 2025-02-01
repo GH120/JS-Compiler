@@ -73,7 +73,18 @@ export class MiniJavaSemantics extends SemanticAnalyser{
 
             const assignment = node.children.some((child) => child.type == this.varTypes.ASSIGN);
 
-            if(assignment) this.extractBindings(node, undo);
+            if(assignment){ //Filtra assignmentNodes vazias
+
+                const assignmentNodes = node.children.filter(n => n.type != "VAR");
+
+                const variable = assignmentNodes[0].token.value;
+
+                const result = assignmentNodes[2];
+                
+                this.bindVariable(variable, result, node.type);
+
+                undo.push(variable); //Variáveis no undo serão removidas ao final do escopo
+            }
         }
 
         /*Insira aqui outras análises, como verificação de retorno de métodos
@@ -88,28 +99,22 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         if(this.scopeNodes[node.type]) this.endScope(node, undo);
     }
 
-    extractBindings(node, undo){
-        const assignmentNodes = node.children.filter(n => n.type != "VAR");
-
-        const variable = assignmentNodes[0].token.value;
-
-        const result = assignmentNodes[2];
+    bindVariable(variable, result, declarationOrAssignment){
 
         //Cria o bucket dessa variável se não existir
         if(!this.symbolTable[variable]) this.symbolTable[variable] = [];
 
 
+        //Verifica erros na declaração/atribuição de variáveis
         const resultType = this.getType(result)
 
         const variableType = this.symbolTable[variable].map(e => e).pop(); //Tipo da variável vai ser o último tipo dela
 
-        this.checkBinding(variable, variableType, resultType, node.type);
+        this.checkBinding(variable, variableType, resultType, declarationOrAssignment);
 
         //Apenas declarações adicionam à stack de bindings
-        if(node.type == this.assignmentNodes.Declaration) 
+        if(declarationOrAssignment == this.assignmentNodes.Declaration) 
             this.symbolTable[variable].push(resultType);
-
-        undo.push(variable); //Variáveis no undo serão removidas ao final do escopo
     }
 
     getType(result){
@@ -126,7 +131,8 @@ export class MiniJavaSemantics extends SemanticAnalyser{
             return (variableBindings)? variableBindings[variableBindings.length - 1] : undefined; //Shadowing da última variável declarada
         }
         
-        if(mappings[result.type]) return mappings[result.type];
+        else if(mappings[result.type]) 
+            return mappings[result.type];
     }
 
     beginScope(){
