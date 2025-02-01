@@ -38,6 +38,19 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         Declaration: true
     }
 
+    varTypes =  {
+        NUM: "INT",
+        DIV: "INT",
+        MULT: "INT",
+        MINUS: "INT",
+        PLUS: "INT",
+        LT: "BOOLEAN",
+        TRUE: "BOOLEAN",
+        FALSE: "BOOLEAN",
+        ID: "ID", //Referência para o binding desse valor
+        ASSIGN: "ASSIGN"
+    }
+
     analyse(AST){
         
         const undo = [] //Array para reverter environment após sair do escopo
@@ -58,9 +71,9 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         //Se for um Assignment, extrai o binding dele
         if(this.assignmentNodes[node.type]){
 
-            const assignment = node.children.some((child) => child.type == "ASSIGN");
+            const assignment = node.children.some((child) => child.type == this.varTypes.ASSIGN);
 
-            if(assignment) this.addBinding(node, undo);
+            if(assignment) this.extractBindings(node, undo);
         }
 
         /*Insira aqui outras análises, como verificação de retorno de métodos
@@ -75,44 +88,43 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         if(this.scopeNodes[node.type]) this.endScope(node, undo);
     }
 
-    addBinding(node, undo){
+    extractBindings(node, undo){
         const assignmentNodes = node.children.filter(n => n.type != "VAR");
 
         const variable = assignmentNodes[0].token.value;
 
         const result = assignmentNodes[2];
 
-
         //Cria o bucket dessa variável se não existir
         if(!this.bindings[variable]) this.bindings[variable] = [];
 
 
-        const binding = {type: this.getType(result), form: node.type}
+        const type = this.getType(result)
 
-        this.bindings[variable].push(binding);
+        const variableType = this.bindings[variable][this.bindings[variable].length - 1];
 
-        undo.push(variable); //Adiciona a variável ao undo
+        this.checkBinding(variable, variableType, type, node.type)
+
+        this.bindings[variable].push(type);
+
+        undo.push(variable); //Variáveis no undo serão removidas ao final do escopo
     }
 
-    getType(node){
+    getType(result){
 
-        const token = node.token;
-
-        const referenceBindings = (token)? this.bindings[node.token.value] : undefined;
-
-        const mappings = {
-            NUM: "INT",
-            DIV: "INT",
-            MULT: "INT",
-            MINUS: "INT",
-            PLUS: "INT",
-            LT: "BOOLEAN",
-            TRUE: "BOOLEAN",
-            FALSE: "BOOLEAN",
-            ID: (referenceBindings)? referenceBindings.map(binding => binding.type) : undefined //Referência para o binding desse valor
+        
+        const mappings = this.varTypes;
+        
+        //Se for ID retorna o último binding do ID referenciado
+        if(result.type == mappings.ID){
+            
+            //Todos os bindings com essa variável
+            const variableBindings = (result.token)? this.bindings[result.token.value] : undefined;
+            
+            return (variableBindings)? variableBindings[variableBindings.length - 1] : undefined; //Shadowing da última variável declarada
         }
-
-        return mappings[node.type]
+        
+        if(mappings[result.type]) return mappings[result.type];
     }
 
     beginScope(){
@@ -135,94 +147,45 @@ export class MiniJavaSemantics extends SemanticAnalyser{
             bindings: copiarBindings(this.bindings)
         });
 
-        this.checkErrors(this.bindings); //Detecta se houve alguma ambiguidade
-
         undo.forEach(variable => this.bindings[variable].pop()); //Reverte mudanças com undo
 
     }
 
-    checkErrors(allBindings){
-
-        //Itera sobre todas as variáveis
-        for(const [variable, bindings] of Object.entries(allBindings)){
-
-            if(bindings.length == 0) continue; 
-
-            //Tipos aceitos para quando houver várias declarações para a mesma variável
-            const acceptedTypes = new Set();
-
-            for(const binding of bindings){
-
-                this.checkBinding(variable, binding, acceptedTypes)
-            }
-        }
-    }
-
     //Extremamente complicado, perdão a quem for tentar entender
-    checkBinding(variable, binding, acceptedTypes){
+    // checkBinding(variable, variableType, resultType ,form){
         
-        let referencesOtherBinding = typeof binding.type == 'object';
 
-        //Declarações de tipos diferentes geram variáveis diferentes, as iguais geram erro
-        if(binding.form == "Declaration"){
+    //     //Declarações de tipos diferentes geram variáveis diferentes, as iguais geram erro
+    //     if(form == "Declaration"){
 
-            if(binding.type == undefined){
-                console.log(`Variável '${variable}' recebendo variável não declarada `);
-            }
+    //         if(resultType == undefined){
+    //             console.log(`Variável '${variable}' recebendo variável não declarada `);
+    //         }
 
-            //Declaração pega variável mais recente se referenciar outro binding
-            while(referencesOtherBinding){
+    //         if(variableType == undefined) return; //Padrão, se não houver último tipo na variável então funciona
 
-                const types = binding.type;
-
-                const mostRecentType = types[types.length - 1];
-
-                referencesOtherBinding = typeof mostRecentType.type == 'object';
-
-                if(!referencesOtherBinding) acceptedTypes.add(mostRecentType);
-            }
+    //         console.log(variable, variableType,resultType, variableType.some(t => t == resultType))
             
-            if(acceptedTypes.has(binding.type)) {
-                console.log(`Variável '${variable}' com declaração repetida `);
-            }
+    //         console.log(`Variável '${variable}' com declaração repetida `);
+    //     }
 
-            acceptedTypes.add(binding.type);
-        }
+    //     //Assignments só podem ser de uma variável já declarada
+    //     if(form == "Assignment"){
 
-        //Assignments só podem ser de uma variável já declarada
-        if(binding.form == "Assignment"){
+    //         if(variableType.size == 0) {
+    //             console.log(`Variável '${variable}' não declarada `);
+    //             return;
+    //         }
+    //         else if(resultType == undefined){
+    //             console.log(`Variável '${variable}' recebendo variável não declarada `);
+    //         } 
 
-            if(acceptedTypes.size == 0) {
-                console.log(`Variável '${variable}' não declarada `);
-                return;
-            }
-            else if(binding.type == undefined){
-                console.log(`Variável '${variable}' recebendo variável não declarada `);
-            } 
-
-            else if(referencesOtherBinding){
-
-                const searchCompatibleTypes = bind => {
-                    
-                    if(typeof bind.type != 'object') return acceptedTypes.has(bind);
-
-                    const subBindings = bind.type;
-
-                    return subBindings.map(bind => searchCompatibleTypes(bind)).some(compatible => compatible);
-                }
-
-                const hasCompatibleType = searchCompatibleTypes(binding);
-
-                if(!hasCompatibleType) 
-                    console.log(`Variável '${variable}' recebendo variável incompatível, tipos compatíveis: ${Array.from(acceptedTypes)} `);
-            }
-
-            else if(!acceptedTypes.has(binding.type)){
-                console.log(`Variável '${variable}' com tipo ${binding.type} incompatível, tipos compatíveis: ${Array.from(acceptedTypes)} `);
-            }
+    //         else if(!variableType.some(t => t == resultType)){
+    //             console.log(`Variável '${variable}' com tipo ${resultType} incompatível, tipos compatíveis: ${variableType} `);
+    //         }
             
-        }
+    //     }
 
-    }
+    // }
     
 }
