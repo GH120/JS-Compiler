@@ -463,6 +463,39 @@ export const compiler7MiniJava =  {
                 System.out.println(sum); 
             }
         }
+       `,
+       //Erro por causa da falha em analisar vif (contém if)
+       `
+       class ArithmeticExample {
+       
+            public static void main(ArithmeticExample[] args) {
+                var a = 10;
+                var b = 5;
+                a = 2;
+
+                if(a < b){
+                    var c = true;
+                    var b = true;
+                    var d = false;
+                    b = a;
+                    a = b;
+                }
+                else {
+                    var c = 2;
+                    var d = a;
+                    var vif = baltazar;
+                    d = true;
+                    calvino = calvo;
+                }
+
+                if(a < b){
+                    var c = 3;
+                    var abacate = 1;
+                    var x = ((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5;
+                }
+                System.out.println(sum); 
+            }
+        }
        `
     ]
 };
