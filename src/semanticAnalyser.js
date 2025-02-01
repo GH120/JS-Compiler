@@ -26,29 +26,42 @@ export class MiniJavaSemantics extends SemanticAnalyser{
 
         this.scopes = [];
 
-    }
 
-    scopeNodes = {
-        ClassDecl: true,
-        Block: true,
-    }
+        //Termos customizáveis para a gramática escolhida
+        
+        this.scopeNodes = {
+            ClassDecl: true,
+            Block: true,
+            MethodDecl: true,
+            MainMethod: true
+        }
+    
+        this.assignmentNodes = {
+            Assignment: "Assignment",
+            Declaration: "Declaration"
+        }
+    
+        this.varTypes =  {
+            NUM: "INT",
+            TRUE: "BOOLEAN",
+            FALSE: "BOOLEAN",
+            ID: "ID", //Referência para o binding desse valor
+            ASSIGN: "ASSIGN"
+        }
 
-    assignmentNodes = {
-        Assignment: "Assignment",
-        Declaration: "Declaration"
-    }
 
-    varTypes =  {
-        NUM: "INT",
-        DIV: "INT",
-        MULT: "INT",
-        MINUS: "INT",
-        PLUS: "INT",
-        LT: "BOOLEAN",
-        TRUE: "BOOLEAN",
-        FALSE: "BOOLEAN",
-        ID: "ID", //Referência para o binding desse valor
-        ASSIGN: "ASSIGN"
+        //Para avaliar expressões vendo se seus termos são de tipos compatíveis
+        const intOperation   = (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined;
+        const boolComparison = (left, right) => (left && right && left == "INT" && right == "INT")? "BOOLEAN" : undefined;
+    
+        this.expressionMappings = {
+            DIV:   intOperation,
+            MULT:  intOperation,
+            MINUS: intOperation,
+            PLUS:  intOperation,
+            LT:    boolComparison,
+        }
+
     }
 
     analyse(AST){
@@ -81,9 +94,11 @@ export class MiniJavaSemantics extends SemanticAnalyser{
 
                 const result = assignmentNodes[2];
                 
-                this.bindVariable(variable, result, node.type);
+                this.bindVariable(variable, result, node.type); //Adiciona a variável a symbolTable e verifica erros
 
-                undo.push(variable); //Variáveis no undo serão removidas ao final do escopo
+                //Apenas declarações estão no undo
+                if(node.type == this.assignmentNodes.Declaration)
+                    undo.push(variable); //Variáveis no undo serão removidas ao final do escopo
             }
         }
 
@@ -119,20 +134,36 @@ export class MiniJavaSemantics extends SemanticAnalyser{
 
     getType(result){
 
-        
-        const mappings = this.varTypes;
-        
-        //Se for ID retorna o último binding do ID referenciado
-        if(result.type == mappings.ID){
+        const expMappings = this.expressionMappings;
+        const varMappings = this.varTypes;
+         
+        //Se for ID retorna o último binding do ID referenciado (Shadowing)
+        if(result.type == varMappings.ID){
             
             //Todos os bindings com essa variável
             const variableBindings = (result.token)? this.symbolTable[result.token.value] : undefined;
             
             return (variableBindings)? variableBindings[variableBindings.length - 1] : undefined; //Shadowing da última variável declarada
         }
+
+        //Se for uma expressão, vê se se encaixa com os tipos requiridos recusivamente
+        //Se não se encaixar, retorna undefined
+        else if(expMappings[result.type]){
+
+            const matchExpressionType = expMappings[result.type];
+
+            const leftNode = result.children[0];
+
+            const rightNode = result.children[1];
+
+            return matchExpressionType(
+                    this.getType(leftNode), 
+                    this.getType(rightNode)
+            );
+        }
         
-        else if(mappings[result.type]) 
-            return mappings[result.type];
+        else if(varMappings[result.type]) 
+            return varMappings[result.type];
     }
 
     beginScope(){
@@ -172,8 +203,8 @@ export class MiniJavaSemantics extends SemanticAnalyser{
 
             if(variableType == undefined) return; //Padrão, se não houver último tipo na variável então funciona
 
-            if(variableType == resultType) 
-                console.log(`Variável '${variable}' com declaração repetida `);
+            // if(variableType == resultType) 
+            //     console.log(`Variável '${variable}' com declaração repetida `); 
         }
 
         //Assignments só podem ser de uma variável já declarada

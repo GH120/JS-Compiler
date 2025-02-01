@@ -362,6 +362,10 @@ export const compiler7MiniJava =  {
       } `,
       `class Sample {
           public static void main(Sample[] args) {
+              var a = 2;
+              var b = 3;
+              var c = 30;
+              var abacate = 1;
               var x = ((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5;
           }
       } `,
@@ -449,6 +453,12 @@ export const compiler7MiniJava =  {
                     var k = baltazar;
                     d = true;
                     calvino = calvo;
+                }
+
+                if(a < b){
+                    var c = 3;
+                    var abacate = 1;
+                    var x = ((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5;
                 }
                 System.out.println(sum); 
             }
