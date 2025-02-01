@@ -26,7 +26,6 @@ export class ImperativeSemantics extends SemanticAnalyser{
 
         this.scopes = [];
 
-        this.scopeCount = 0;
     }
 
     analyse(AST){
@@ -46,13 +45,14 @@ export class ImperativeSemantics extends SemanticAnalyser{
         };
 
 
-        //Se for um statement, extrai o binding dele
-        if(node.type == "Statement"){
+        //Se for um Assignment ou Declaration, extrai o binding dele
+        if(node.type == "Assignment" || node.type == "Declaration"){
 
             const assignment = node.children.some((child) => child.type == "ASSIGN");
 
             if(assignment) this.addBinding(node, undo);
         }
+        
 
         //Percorre para todas os nós filhos
         node.children.forEach(child => this.visit(child, undo))
@@ -69,10 +69,13 @@ export class ImperativeSemantics extends SemanticAnalyser{
         const result = assignmentNodes[2];
 
 
-        //Adiciona o bucket dessa variável se não existir
+        //Cria o bucket dessa variável se não existir
         if(!this.bindings[variable]) this.bindings[variable] = [];
 
-        this.bindings[variable].push(this.getType(result));
+
+        const binding = {type: this.getType(result), form: node.type}
+
+        this.bindings[variable].push(binding);
 
         undo.push(variable); //Adiciona a variável ao undo
     }
@@ -92,7 +95,7 @@ export class ImperativeSemantics extends SemanticAnalyser{
             LT: "BOOLEAN",
             TRUE: "BOOLEAN",
             FALSE: "BOOLEAN",
-            ID: (referenceBindings)? referenceBindings[referenceBindings.length - 1] : undefined //Referência para o binding desse valor
+            ID: (referenceBindings)? referenceBindings.map(binding => binding.type) : undefined //Referência para o binding desse valor
         }
 
         return mappings[node.type]
@@ -111,33 +114,101 @@ export class ImperativeSemantics extends SemanticAnalyser{
                                                       .map(entry => [entry[0], [...entry[1]]]) //Copia array de bindings
                                              );
 
+        //Grava uma cópia do escopo atual para a lista de escopos
         this.scopes.push({
             id: this.scopes.length, 
             type: node.type,
             bindings: copiarBindings(this.bindings)
         });
 
-        this.detectAmbiguity(this.bindings); //Detecta se houve alguma ambiguidade
+        this.checkErrors(this.bindings); //Detecta se houve alguma ambiguidade
 
         undo.forEach(variable => this.bindings[variable].pop()); //Reverte mudanças com undo
 
     }
 
-    detectAmbiguity(bindings){
+    checkErrors(allBindings){
 
-        for(const [key, binding] of Object.entries(bindings)){
+        //Itera sobre todas as variáveis
+        for(const [variable, bindings] of Object.entries(allBindings)){
 
-            if(binding.length == 0) continue;
+            if(bindings.length == 0) continue; 
 
-            if(binding.some(bind => bind == undefined)) { //Se o binding não for definido
-                console.log(`Variável '${key}' recebendo variável não declarada `);
-                continue;
+            //Tipos aceitos para quando houver várias declarações para a mesma variável
+            const acceptedTypes = new Set();
+
+            for(const binding of bindings){
+
+                this.checkBinding(variable, binding, acceptedTypes)
+            }
+        }
+    }
+
+    //Extremamente complicado, perdão a quem for tentar entender
+    checkBinding(variable, binding, acceptedTypes){
+        
+        let referencesOtherBinding = typeof binding.type == 'object';
+
+        //Declarações de tipos diferentes geram variáveis diferentes, as iguais geram erro
+        if(binding.form == "Declaration"){
+
+            if(binding.type == undefined){
+                console.log(`Variável '${variable}' recebendo variável não declarada `);
             }
 
-            const mainType = binding[0];
+            //Declaração pega variável mais recente se referenciar outro binding
+            while(referencesOtherBinding){
 
-            if(binding.some(type => type != mainType)) console.log(`Variável '${key}' recebendo tipo incompatível: ` + binding);
+                const types = binding.type;
+
+                const mostRecentType = types[types.length - 1];
+
+                referencesOtherBinding = typeof mostRecentType.type == 'object';
+
+                if(!referencesOtherBinding) acceptedTypes.add(mostRecentType);
+            }
+            
+            if(acceptedTypes.has(binding.type)) {
+                console.log(`Variável '${variable}' com declaração repetida `);
+            }
+
+            acceptedTypes.add(binding.type);
         }
+
+        //Assignments só podem ser de uma variável já declarada
+        if(binding.form == "Assignment"){
+
+            if(acceptedTypes.size == 0) {
+                console.log(`Variável '${variable}' não declarada `);
+                return;
+            }
+            else if(binding.type == undefined){
+                console.log(`Variável '${variable}' recebendo variável não declarada `);
+            } 
+
+            else if(referencesOtherBinding){
+
+                const searchCompatibleTypes = bind => {
+                    
+                    if(typeof bind.type != 'object') return acceptedTypes.has(bind);
+
+                    const subBindings = bind.type;
+
+                    return subBindings.map(bind => searchCompatibleTypes(bind)).some(compatible => compatible);
+                }
+
+                const hasCompatibleType = searchCompatibleTypes(binding);
+
+                if(!hasCompatibleType) 
+                    console.log(`Variável '${variable}' recebendo variável incompatível, tipos compatíveis: ${Array.from(acceptedTypes)} `);
+            }
+
+            else if(!acceptedTypes.has(binding.type)){
+                console.log(`Variável '${variable}' com tipo ${binding.type} incompatível, tipos compatíveis: ${Array.from(acceptedTypes)} `);
+            }
+            
+        }
+
     }
 
     scopeNodes = {

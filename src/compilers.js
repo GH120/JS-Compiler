@@ -319,8 +319,11 @@ export const compiler7MiniJava =  {
       language.addProductionRule("Statement", ["IF", "LPAR", "Exp", "RPAR", "Block", "Optional"]); //Escolhido Block para evitar problema do dangling else
       language.addProductionRule("Statement", ["WHILE", "LPAR", "Exp", "RPAR", "Statement"]);
       language.addProductionRule("Statement", ["PRINT", "LPAR", "Exp", "RPAR", "SEMI"]);
-      language.addProductionRule("Statement", ["ID", "ASSIGN", "Exp", "SEMI"]);
-      language.addProductionRule("Statement", ["VAR","ID", "ASSIGN", "Exp", "SEMI"]); //DECLARAÇÃO APENAS COM 'VAR', LIMITAÇÃO DA AMBIGUIDADE TYPE ID
+      language.addProductionRule("Statement", ["Assignment"]);
+      language.addProductionRule("Statement", ["Declaration"]); 
+
+      language.addProductionRule("Declaration", ["VAR", "ID", "ASSIGN", "Exp", "SEMI"]); //DECLARAÇÃO APENAS COM 'VAR', LIMITAÇÃO DA AMBIGUIDADE TYPE ID
+      language.addProductionRule("Assignment", ["ID", "ASSIGN", "Exp", "SEMI"]); 
 
       //Elimina recursão à esquerda do statement
       language.addProductionRule( "Optional", ["ELSE", "Statement"])
@@ -430,16 +433,21 @@ export const compiler7MiniJava =  {
             public static void main(ArithmeticExample[] args) {
                 var a = 10;
                 var b = 5;
+                a = 2;
 
                 if(a < b){
                     var c = true;
                     var b = true;
                     var d = false;
+                    b = a;
+                    a = b;
                 }
                 else {
                     var c = 2;
-                    var d = 7;
+                    var d = a;
                     var k = baltazar;
+                    d = true;
+                    calvino = calvo;
                 }
                 System.out.println(sum); 
             }
