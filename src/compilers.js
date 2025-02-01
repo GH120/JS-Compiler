@@ -430,6 +430,7 @@ export const compiler7MiniJava =  {
 
        `
        class ArithmeticExample {
+       
             public static void main(ArithmeticExample[] args) {
                 var a = 10;
                 var b = 5;

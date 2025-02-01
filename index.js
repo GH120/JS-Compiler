@@ -72,9 +72,11 @@ class Program{
         //Análise semântica
         if(this.phases < SEMANTIC) return;
 
-        console.log("ENVIRONMENTS DA ANÁLISE SEMÂNTICA")
+        console.log("RESULTADO DA ANÁLISE SEMÂNTICA")
 
         console.log(util.inspect(this.semantics.analyse(AST), {depth:10}))
+
+        console.log("ENVIRONMENTS DE CADA ESCOPO ACIMA")
 
 
     }

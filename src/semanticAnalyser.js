@@ -1,7 +1,7 @@
 export class SemanticAnalyser{
 
     constructor(){
-        this.bindings = {};
+        this.symbolTable = {};
         this.scopes   = [];
     }
 
@@ -22,7 +22,7 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         super();
 
         //Hashtable de bindings vai ser implementada como um objeto, onde cada chave terá um bucket linked list
-        this.bindings = {};
+        this.symbolTable = {};
 
         this.scopes = [];
 
@@ -34,8 +34,8 @@ export class MiniJavaSemantics extends SemanticAnalyser{
     }
 
     assignmentNodes = {
-        Assignment: true,
-        Declaration: true
+        Assignment: "Assignment",
+        Declaration: "Declaration"
     }
 
     varTypes =  {
@@ -96,16 +96,18 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         const result = assignmentNodes[2];
 
         //Cria o bucket dessa variável se não existir
-        if(!this.bindings[variable]) this.bindings[variable] = [];
+        if(!this.symbolTable[variable]) this.symbolTable[variable] = [];
 
 
-        const type = this.getType(result)
+        const resultType = this.getType(result)
 
-        const variableType = this.bindings[variable][this.bindings[variable].length - 1];
+        const variableType = this.symbolTable[variable].map(e => e).pop(); //Tipo da variável vai ser o último tipo dela
 
-        this.checkBinding(variable, variableType, type, node.type)
+        this.checkBinding(variable, variableType, resultType, node.type);
 
-        this.bindings[variable].push(type);
+        //Apenas declarações adicionam à stack de bindings
+        if(node.type == this.assignmentNodes.Declaration) 
+            this.symbolTable[variable].push(resultType);
 
         undo.push(variable); //Variáveis no undo serão removidas ao final do escopo
     }
@@ -119,7 +121,7 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         if(result.type == mappings.ID){
             
             //Todos os bindings com essa variável
-            const variableBindings = (result.token)? this.bindings[result.token.value] : undefined;
+            const variableBindings = (result.token)? this.symbolTable[result.token.value] : undefined;
             
             return (variableBindings)? variableBindings[variableBindings.length - 1] : undefined; //Shadowing da última variável declarada
         }
@@ -144,48 +146,47 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         this.scopes.push({
             id: this.scopes.length, 
             type: node.type,
-            bindings: copiarBindings(this.bindings)
+            bindings: copiarBindings(this.symbolTable)
         });
 
-        undo.forEach(variable => this.bindings[variable].pop()); //Reverte mudanças com undo
+        undo.forEach(variable => this.symbolTable[variable].pop()); //Reverte mudanças com undo
 
     }
 
     //Extremamente complicado, perdão a quem for tentar entender
-    // checkBinding(variable, variableType, resultType ,form){
+    checkBinding(variable, variableType, resultType ,form){
         
 
-    //     //Declarações de tipos diferentes geram variáveis diferentes, as iguais geram erro
-    //     if(form == "Declaration"){
+        //Declarações de tipos diferentes geram variáveis diferentes, as iguais geram erro
+        if(form == "Declaration"){
 
-    //         if(resultType == undefined){
-    //             console.log(`Variável '${variable}' recebendo variável não declarada `);
-    //         }
+            if(resultType == undefined){
+                console.log(`Variável '${variable}' recebendo variável não declarada `);
+            }
 
-    //         if(variableType == undefined) return; //Padrão, se não houver último tipo na variável então funciona
+            if(variableType == undefined) return; //Padrão, se não houver último tipo na variável então funciona
 
-    //         console.log(variable, variableType,resultType, variableType.some(t => t == resultType))
+            if(variableType == resultType) 
+                console.log(`Variável '${variable}' com declaração repetida `);
+        }
+
+        //Assignments só podem ser de uma variável já declarada
+        if(form == "Assignment"){
+
+            if(variableType == undefined) {
+                console.log(`Variável '${variable}' não declarada `);
+                return;
+            }
+            else if(resultType == undefined){
+                console.log(`Variável '${variable}' recebendo variável não declarada `);
+            } 
+
+            else if(variableType != resultType){
+                console.log(`Variável '${variable}' com tipo ${resultType} incompatível, tipos compatíveis: ${variableType} `);
+            }
             
-    //         console.log(`Variável '${variable}' com declaração repetida `);
-    //     }
+        }
 
-    //     //Assignments só podem ser de uma variável já declarada
-    //     if(form == "Assignment"){
-
-    //         if(variableType.size == 0) {
-    //             console.log(`Variável '${variable}' não declarada `);
-    //             return;
-    //         }
-    //         else if(resultType == undefined){
-    //             console.log(`Variável '${variable}' recebendo variável não declarada `);
-    //         } 
-
-    //         else if(!variableType.some(t => t == resultType)){
-    //             console.log(`Variável '${variable}' com tipo ${resultType} incompatível, tipos compatíveis: ${variableType} `);
-    //         }
-            
-    //     }
-
-    // }
+    }
     
 }
