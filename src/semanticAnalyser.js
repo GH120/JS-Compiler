@@ -15,8 +15,8 @@ export class SemanticAnalyser{
     }
 }
 
-
-export class ImperativeSemantics extends SemanticAnalyser{
+//Semantica Imperativa
+export class MiniJavaSemantics extends SemanticAnalyser{
 
     constructor(){
         super();
@@ -26,6 +26,16 @@ export class ImperativeSemantics extends SemanticAnalyser{
 
         this.scopes = [];
 
+    }
+
+    scopeNodes = {
+        ClassDecl: true,
+        Block: true,
+    }
+
+    assignmentNodes = {
+        Assignment: true,
+        Declaration: true
     }
 
     analyse(AST){
@@ -45,16 +55,20 @@ export class ImperativeSemantics extends SemanticAnalyser{
         };
 
 
-        //Se for um Assignment ou Declaration, extrai o binding dele
-        if(node.type == "Assignment" || node.type == "Declaration"){
+        //Se for um Assignment, extrai o binding dele
+        if(this.assignmentNodes[node.type]){
 
             const assignment = node.children.some((child) => child.type == "ASSIGN");
 
             if(assignment) this.addBinding(node, undo);
         }
+
+        /*Insira aqui outras análises, como verificação de retorno de métodos
+        
+        */
         
 
-        //Percorre para todas os nós filhos
+        //Visita todos os nós filhos
         node.children.forEach(child => this.visit(child, undo))
 
         //Termina o escopo arquivando ele em this.scopes e revertendo as mudanças com undo
@@ -209,11 +223,6 @@ export class ImperativeSemantics extends SemanticAnalyser{
             
         }
 
-    }
-
-    scopeNodes = {
-        ClassDecl: true,
-        Block: true,
     }
     
 }

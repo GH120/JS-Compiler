@@ -1,6 +1,6 @@
 import { AST1, MiniJavaAST } from "./abstractSyntaxTree.js"
 import { LLParser, PredictiveParser } from "./parser.js"
-import { ImperativeSemantics } from "./semanticAnalyser.js"
+import { MiniJavaSemantics } from "./semanticAnalyser.js"
 
 export const compiler1 = {
     lexicalRules: [
@@ -352,7 +352,7 @@ export const compiler7MiniJava =  {
   
     parser: LLParser,
     abstractSyntaxTree: new MiniJavaAST(), 
-    semantics: new ImperativeSemantics(),
+    semantics: new MiniJavaSemantics(),
     phases: 4,
     code: [
       `class Test {
