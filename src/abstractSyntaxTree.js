@@ -147,9 +147,10 @@ export class MiniJavaAST extends AbstractSyntaxTree{
   build(syntaxTree){
 
     //Mesmo eliminando nós redundantes, as operações não estão na ordem certa
-    const operationsTree = this.translate(syntaxTree, this.eliminationRules);
+    const operationsTree = this.translate(syntaxTree, this.firstElimination);
 
-    const abstractTree   = this.translate(operationsTree, this.operationOrderInversionRules)
+    //Segundo round, ordena operações e elimina partes redundantes como parenteses
+    const abstractTree   = this.translate(operationsTree, this.secondElimination)
 
     return abstractTree
   }
@@ -165,13 +166,16 @@ export class MiniJavaAST extends AbstractSyntaxTree{
     // Transforma os filhos recursivamente
     node.children = node.children.map(child => this.translate(child, rules));
 
+    //Elimina filhos nulos
+    node.children = node.children.filter(child => !!child);
+
     const transform = rules[node.type];
 
     // Retorna o nó transformado ou o nó bruto
     return transform ? transform(node) : node;
   }
 
-  eliminationRules = {
+  firstElimination = {
     // S: (node) => node.children[0], // Ignora EOF
 
     Exp: this.eliminateMainExpression,
@@ -219,19 +223,47 @@ export class MiniJavaAST extends AbstractSyntaxTree{
     StatementList: this.linearizeRightwardList, 
     FormalList: this.linearizeRightwardList, 
     ClassDeclList: this.linearizeRightwardList, 
+    MethodDeclList: this.linearizeRightwardList, 
+    VarDeclList: this.linearizeRightwardList, 
+
+    Optional: node => (node.children.length)? {
+                                                type: node.children[0].type, 
+                                                children: [node.children[1]]
+                                              } : null,
 
 
     Program: (node) => {return {type: "Program", children: [node.children[0]]}},
     Start: (node) => node.children[0],
+
+    //Remover esses tokens da árvore abstrata, redundantes
+    RBRACE: node => null,
+    LBRACE: node => null,
+    VAR: node => null,
+    SEMI: node => null,
+    ASSIGN: node => null
   }
 
-  operationOrderInversionRules = {
+  secondElimination = {
     PLUS: this.rebalanceTree,
     MULT: this.rebalanceTree,
     DIV:  this.rebalanceTree,
     LT:   this.rebalanceTree,
     MINUS: this.rebalanceTree,
     temporary :  this.rebalanceTree,
+
+    //Agora elimina os parênteses redundantes
+    LPAR: node => null,
+    RPAR: node => null,
+
+    //Simplifica os statements
+    Statement: node => {
+
+      //Retorna o primeiro filho se houver apenas ele
+      if(node.children.length == 1) return node.children[0];
+
+      //filho direito vira o statement
+      return {type: node.children[0].type, children: [...node.children.slice(1)]}
+    },
   }
 
   eliminateMainExpression(node){
@@ -300,15 +332,17 @@ export class MiniJavaAST extends AbstractSyntaxTree{
 
   linearizeRightwardList(node){
 
-    if(node.children.length == 0) return node;
+    if(node.children.length == 0) return null;
 
     if(node.children.length == 1) return node.children[0];
 
     if(node.children.length == 2){
 
+      //todos os netos do segundo filho viram filhos diretos do pai
+      //Torna a lista linear fazendo netos virarem filhos
       return {
         type: node.type,
-        children: [node.children[0], ...node.children[1].children] // todos os netos do segundo filho viram filhos diretos do pai
+        children: [node.children[0], ...node.children[1].children] 
       }
     }
   }

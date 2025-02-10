@@ -96,16 +96,9 @@ export class MiniJavaSemantics extends SemanticAnalyser{
 
     extractBindings(node){
 
-        const varTypes = this.settings.varTypes;
-
-        //Ignora se não houver '=', ou o equivalente definido em settings.varTypes
-        if(!node.children.some((child) => child.type == varTypes.ASSIGN)) return;
-
-        //Ignora termo vazio VAR
-        const assignmentNodes = node.children.filter(n => n.type != "VAR");
-
-        const variable      = assignmentNodes[0].token.value;
-        const result        = assignmentNodes[2];
+        //Espera que a árvore abstrata tenha declarações/assignments com apenas dois filhos: variável e resultado
+        const variable      = node.children[0].token.value;
+        const result        = node.children[1];
         const resultType    = this.getType(result)
         const variableType  = this.symbolTable.get(variable).map(e => e).pop(); //Tipo da variável vai ser o último tipo dela
         const isDeclaration = (node.type == this.settings.assignmentNodes.Declaration);
