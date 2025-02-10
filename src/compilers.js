@@ -468,6 +468,8 @@ export const compiler7MiniJava =  {
 
        `
        class ArithmeticExample {
+
+            int[][][][] b;
        
             public static void main(ArithmeticExample[] args) {
                 var a = 10;

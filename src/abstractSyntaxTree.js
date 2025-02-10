@@ -205,6 +205,21 @@ export class MiniJavaAST extends AbstractSyntaxTree{
 
       return EXP;
     },
+    
+    // Type: this.eliminateMainExpression,
+    BaseType: (node) => node.children[0],
+    Array: this.eliminateArray, 
+    Type: node => {
+      return {
+        type: node.children[0].type + node.children[1].value,
+        children: [],
+      }
+    },
+
+    StatementList: this.linearizeRightwardList, 
+    FormalList: this.linearizeRightwardList, 
+    ClassDeclList: this.linearizeRightwardList, 
+
 
     Program: (node) => {return {type: "Program", children: [node.children[0]]}},
     Start: (node) => node.children[0],
@@ -259,6 +274,43 @@ export class MiniJavaAST extends AbstractSyntaxTree{
         type: node.children[0].type,
         children: [node.children[1], node.children[2]]
     };
+  }
+
+  eliminateArray(node){
+
+    if (node.children.length === 0) return node;
+
+    //Se a outra operação T1 à direita for vazia, retorna o filho esquerdo
+    if(node.children.length == 0) {
+        return {
+            type: node.type,
+            value: "",
+            children: []
+        }
+    }
+
+    const vectorNode = node.children[2];
+
+    return {
+        type: node.type,
+        value: ((vectorNode.value)? vectorNode.value: "") + "[]",
+        children: []
+    };
+  }
+
+  linearizeRightwardList(node){
+
+    if(node.children.length == 0) return node;
+
+    if(node.children.length == 1) return node.children[0];
+
+    if(node.children.length == 2){
+
+      return {
+        type: node.type,
+        children: [node.children[0], ...node.children[1].children] // todos os netos do segundo filho viram filhos diretos do pai
+      }
+    }
   }
 
   rebalanceTree(node){
