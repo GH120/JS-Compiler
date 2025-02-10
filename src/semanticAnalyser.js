@@ -1,7 +1,9 @@
+import { ImperativeSymbolTable, SymbolTable } from "./language.js";
+
 export class SemanticAnalyser{
 
     constructor(){
-        this.symbolTable = {};
+        this.symbolTable = new SymbolTable();
         this.scopes   = [];
     }
 
@@ -16,132 +18,115 @@ export class SemanticAnalyser{
 }
 
 //Semantica Imperativa
+//Dividir parte de tabela de símbolos da árvore semântica
 export class MiniJavaSemantics extends SemanticAnalyser{
 
-    constructor(){
+    constructor(settings){
         super();
 
-        //Hashtable de bindings vai ser implementada como um objeto, onde cada chave terá um bucket linked list
-        this.symbolTable = {};
+        //Hashtable imperativa, destroi environment ao sair do escopo
+        this.symbolTable = new ImperativeSymbolTable();
 
-        this.scopes = [];
-
+        if(settings) this.settings = settings;
 
         //Termos customizáveis para a gramática escolhida
-        
-        this.scopeNodes = {
+
+    }
+
+    //Configuração padrão para o minijava 
+    settings = {
+        scopeNodes: {
             ClassDecl: true,
             Block: true,
             MethodDecl: true,
             MainMethod: true
-        }
+        },
     
-        this.assignmentNodes = {
+        assignmentNodes: {
             Assignment: "Assignment",
             Declaration: "Declaration"
-        }
+        },
     
-        this.varTypes =  {
+        varTypes:  {
             NUM: "INT",
             TRUE: "BOOLEAN",
             FALSE: "BOOLEAN",
             ID: "ID", //Referência para o binding desse valor
             ASSIGN: "ASSIGN"
-        }
-
-
-        //Para avaliar expressões vendo se seus termos são de tipos compatíveis
-        const intOperation   = (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined;
-        const boolComparison = (left, right) => (left && right && left == "INT" && right == "INT")? "BOOLEAN" : undefined;
+        },
     
-        this.expressionMappings = {
-            DIV:   intOperation,
-            MULT:  intOperation,
-            MINUS: intOperation,
-            PLUS:  intOperation,
-            LT:    boolComparison,
+        expressionMappings: {
+            DIV:   (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            MULT:  (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            MINUS: (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            PLUS:  (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            LT:    (left, right) => (left && right && left == "INT" && right == "INT")? "BOOLEAN" : undefined,
         }
-
     }
 
     analyse(AST){
         
-        const undo = [] //Array para reverter environment após sair do escopo
+        this.visit(AST);
 
-        this.visit(AST, undo);
-
-        return this.scopes;
+        return this.symbolTable.scopes;
     }
 
-    visit(node, undo){
+    visit(node){
 
-        //Cria um novo array de undo para o novo escopo
-        if(this.scopeNodes[node.type]) {
-            undo = []; 
-        };
+        const isScope      = this.settings.scopeNodes[node.type];
+        const isAssignment = this.settings.assignmentNodes[node.type];
+
+        //Inicia novo escopo caso seja bloco, método, classe...
+        if(isScope) this.symbolTable.beginScope();
 
 
         //Se for um Assignment, extrai o binding dele
-        if(this.assignmentNodes[node.type]){
-
-            const assignment = node.children.some((child) => child.type == this.varTypes.ASSIGN);
-
-            if(assignment){ //Filtra assignmentNodes vazias
-
-                const assignmentNodes = node.children.filter(n => n.type != "VAR");
-
-                const variable = assignmentNodes[0].token.value;
-
-                const result = assignmentNodes[2];
-                
-                this.bindVariable(variable, result, node.type); //Adiciona a variável a symbolTable e verifica erros
-
-                //Apenas declarações estão no undo
-                if(node.type == this.assignmentNodes.Declaration)
-                    undo.push(variable); //Variáveis no undo serão removidas ao final do escopo
-            }
-        }
+        if(isAssignment) this.extractBindings(node);
 
         /*Insira aqui outras análises, como verificação de retorno de métodos
         
         */
-        
 
         //Visita todos os nós filhos
-        node.children.forEach(child => this.visit(child, undo))
+        node.children.forEach(child => this.visit(child))
 
-        //Termina o escopo arquivando ele em this.scopes e revertendo as mudanças com undo
-        if(this.scopeNodes[node.type]) this.endScope(node, undo);
+        //Termina o escopo atual, revertendo mudanças na tabela de símbolos
+        if(isScope) this.symbolTable.endScope(node);
     }
 
-    bindVariable(variable, result, declarationOrAssignment){
+    extractBindings(node){
 
-        //Cria o bucket dessa variável se não existir
-        if(!this.symbolTable[variable]) this.symbolTable[variable] = [];
+        const varTypes = this.settings.varTypes;
 
+        //Ignora se não houver '=', ou o equivalente definido em settings.varTypes
+        if(!node.children.some((child) => child.type == varTypes.ASSIGN)) return;
 
-        //Verifica erros na declaração/atribuição de variáveis
-        const resultType = this.getType(result)
+        //Ignora termo vazio VAR
+        const assignmentNodes = node.children.filter(n => n.type != "VAR");
 
-        const variableType = this.symbolTable[variable].map(e => e).pop(); //Tipo da variável vai ser o último tipo dela
+        const variable      = assignmentNodes[0].token.value;
+        const result        = assignmentNodes[2];
+        const resultType    = this.getType(result)
+        const variableType  = this.symbolTable.get(variable).map(e => e).pop(); //Tipo da variável vai ser o último tipo dela
+        const isDeclaration = (node.type == this.settings.assignmentNodes.Declaration);
 
-        this.checkBinding(variable, variableType, resultType, declarationOrAssignment);
+        //Verifica erros na declaração de variáveis
+        const valid = this.checkAssignmentErrors(variable, variableType, resultType, isDeclaration);
 
-        //Apenas declarações adicionam à stack de bindings
-        if(declarationOrAssignment == this.assignmentNodes.Declaration) 
-            this.symbolTable[variable].push(resultType);
+        //Apenas declarações associam novos tipos
+        if(isDeclaration && valid) this.symbolTable.bindVariable(variable, resultType);
     }
 
     getType(result){
 
-        const expMappings = this.expressionMappings;
-        const varMappings = this.varTypes;
+        const expMappings = this.settings.expressionMappings;
+        const varMappings = this.settings.varTypes;
          
         //Se for ID retorna o último binding do ID referenciado (Shadowing)
         if(result.type == varMappings.ID){
             
             //Todos os bindings com essa variável
-            const variableBindings = (result.token)? this.symbolTable[result.token.value] : undefined;
+            const variableBindings = (result.token)? this.symbolTable.get(result.token.value) : undefined;
             
             return (variableBindings)? variableBindings[variableBindings.length - 1] : undefined; //Shadowing da última variável declarada
         }
@@ -166,63 +151,44 @@ export class MiniJavaSemantics extends SemanticAnalyser{
             return varMappings[result.type];
     }
 
-    beginScope(){
-
-        // this.scopeCount++;
-    }
-
-    endScope(node, undo){
-
-        //Função para copiar bindings
-        const copiarBindings = (bindings) => Object.fromEntries(
-                                                Object.entries(bindings)
-                                                      .map(entry => [entry[0], [...entry[1]]]) //Copia array de bindings
-                                             );
-
-        //Grava uma cópia do escopo atual para a lista de escopos
-        this.scopes.push({
-            id: this.scopes.length, 
-            type: node.type,
-            bindings: copiarBindings(this.symbolTable)
-        });
-
-        undo.forEach(variable => this.symbolTable[variable].pop()); //Reverte mudanças com undo
-
-    }
-
-    //Extremamente complicado, perdão a quem for tentar entender
-    checkBinding(variable, variableType, resultType ,form){
+    //Verifica erros de declaração e associação
+    checkAssignmentErrors(variable, variableType, resultType ,isDeclaration){
         
 
         //Declarações de tipos diferentes geram variáveis diferentes, as iguais geram erro
-        if(form == "Declaration"){
+        if(isDeclaration){
 
             if(resultType == undefined){
                 console.log(`Variável '${variable}' recebendo variável não declarada `);
+                return false;
             }
 
-            if(variableType == undefined) return; //Padrão, se não houver último tipo na variável então funciona
+            if(variableType == undefined) return true; //Padrão, se não houver último tipo na variável então funciona
 
             // if(variableType == resultType) 
             //     console.log(`Variável '${variable}' com declaração repetida `); 
         }
 
         //Assignments só podem ser de uma variável já declarada
-        if(form == "Assignment"){
+        else{
 
             if(variableType == undefined) {
                 console.log(`Variável '${variable}' não declarada `);
-                return;
+                return false;
             }
             else if(resultType == undefined){
                 console.log(`Variável '${variable}' recebendo variável não declarada `);
+                return false;
             } 
 
             else if(variableType != resultType){
                 console.log(`Variável '${variable}' com tipo ${resultType} incompatível, tipos compatíveis: ${variableType} `);
+                return false;
             }
             
         }
+
+        return true;
 
     }
     

@@ -352,7 +352,41 @@ export const compiler7MiniJava =  {
   
     parser: LLParser,
     abstractSyntaxTree: new MiniJavaAST(), 
-    semantics: new MiniJavaSemantics(),
+    semantics: new MiniJavaSemantics({
+
+        //Nós de escopo
+        scopeNodes: {
+            ClassDecl: true,
+            Block: true,
+            MethodDecl: true,
+            MainMethod: true
+        },
+    
+        //Nós de declaração
+        assignmentNodes: {
+            Assignment: "Assignment",
+            Declaration: "Declaration"
+        },
+    
+        //Tipos que as variáveis podem assumir
+        varTypes:  {
+            NUM: "INT",
+            TRUE: "BOOLEAN",
+            FALSE: "BOOLEAN",
+            ID: "ID", //Referência para o binding desse valor
+            ASSIGN: "ASSIGN"
+        },
+    
+        //Tipo do resultado de cada expressão
+        expressionMappings: {
+            DIV:   (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            MULT:  (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            MINUS: (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            PLUS:  (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
+            LT:    (left, right) => (left && right && left == "INT" && right == "INT")? "BOOLEAN" : undefined,
+        }
+
+    }),
     phases: 4,
     code: [
       `class Test {
