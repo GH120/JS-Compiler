@@ -339,6 +339,9 @@ export class MiniJavaAST extends AbstractSyntaxTree{
 
     if(node.children.length == 2){
 
+      //Se o filho esquerdo não for uma lista, mantém inalterado o nó
+      if(node.children[1].type != node.type) return node
+
       //todos os netos do segundo filho viram filhos diretos do pai
       //Torna a lista linear fazendo netos virarem filhos
       return {
