@@ -64,13 +64,6 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         }
     }
 
-    analyse(AST){
-        
-        this.visit(AST);
-
-        return this.symbolTable.scopes;
-    }
-
     visit(node){
 
         const isScope      = this.settings.scopeNodes[node.type];
@@ -94,14 +87,14 @@ export class MiniJavaSemantics extends SemanticAnalyser{
         if(isScope) this.symbolTable.endScope(node);
     }
 
-    extractBindings(node){
+    extractBindings(assignmentNode){
 
         //Espera que a árvore abstrata tenha declarações/assignments com apenas dois filhos: variável e resultado
-        const variable      = node.children[0].token.value;
-        const result        = node.children[1];
+        const variable      = assignmentNode.children[0].token.value;
+        const result        = assignmentNode.children[1];
         const resultType    = this.getType(result)
         const variableType  = this.symbolTable.get(variable).map(e => e).pop(); //Tipo da variável vai ser o último tipo dela
-        const isDeclaration = (node.type == this.settings.assignmentNodes.Declaration);
+        const isDeclaration = (assignmentNode.type == this.settings.assignmentNodes.Declaration);
 
         //Verifica erros na declaração de variáveis
         const valid = this.checkAssignmentErrors(variable, variableType, resultType, isDeclaration);

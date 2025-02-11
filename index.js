@@ -74,9 +74,11 @@ class Program{
 
         console.log("RESULTADO DA ANÁLISE SEMÂNTICA")
 
-        console.log(util.inspect(this.semantics.analyse(AST), {depth:10}))
+        this.semantics.visit(AST);
 
-        console.log("ENVIRONMENTS DE CADA ESCOPO ACIMA")
+        console.log("ENVIRONMENTS DE CADA ESCOPO ACIMA");
+
+        console.log(util.inspect(this.semantics.symbolTable.scopes, {depth:10}))
 
 
     }
