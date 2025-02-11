@@ -254,6 +254,7 @@ export const compiler7MiniJava =  {
         { name: 'MINUS', regex: /\-/ },
         { name: 'DIV', regex: /\// },
         { name: 'LT', regex: /</ },
+        { name: 'GT', regex: />/ },
         { name: 'AND', regex: /&&/ },
         { name: 'NOT', regex: /!/ },
         { name: 'LBRACK', regex: /\[/ },
@@ -334,6 +335,7 @@ export const compiler7MiniJava =  {
       language.addProductionRule("ExpPrime", ["PLUS", "Term", "ExpPrime"]);
       language.addProductionRule("ExpPrime", ["MINUS", "Term", "ExpPrime"]);
       language.addProductionRule("ExpPrime", ["LT", "Term", "ExpPrime"]);
+      language.addProductionRule("ExpPrime", ["GT", "Term", "ExpPrime"]);
       language.addProductionRule("ExpPrime", []); // Epsilon
 
       language.addProductionRule("Term", ["Factor", "TermPrime"]);
@@ -384,6 +386,7 @@ export const compiler7MiniJava =  {
             MINUS: (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
             PLUS:  (left, right) => (left && right && left == "INT" && right == "INT")? "INT" : undefined,
             LT:    (left, right) => (left && right && left == "INT" && right == "INT")? "BOOLEAN" : undefined,
+            GT:    (left, right) => (left && right && left == "INT" && right == "INT")? "BOOLEAN" : undefined,
         }
 
     }),
@@ -483,7 +486,7 @@ export const compiler7MiniJava =  {
                     b = a;
                     a = b;
                 }
-                else {
+                else if(b > c) {
                     var c = 2;
                     var d = a;
                     var k = baltazar;
@@ -491,7 +494,7 @@ export const compiler7MiniJava =  {
                     calvino = calvo;
                 }
 
-                if(a < b){
+                else if(a < b){
                     var c = 3;
                     var abacate = 1;
                     var x = ((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5;
@@ -516,7 +519,7 @@ export const compiler7MiniJava =  {
                     b = a;
                     a = b;
                 }
-                else {
+                else if(b > c){
                     var c = 2;
                     var d = a;
                     var vif = baltazar;
@@ -524,7 +527,7 @@ export const compiler7MiniJava =  {
                     calvino = calvo;
                 }
 
-                if(a < b){
+                else if(a < b*a){
                     var c = 3;
                     var abacate = 1;
                     var x = ((2*2+(a*b)+(b*c))/5 * 48 * (25+4+2+1+(59*abacate)-22 + 48))/5;

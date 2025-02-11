@@ -248,6 +248,7 @@ export class MiniJavaAST extends AbstractSyntaxTree{
     MULT: this.rebalanceTree,
     DIV:  this.rebalanceTree,
     LT:   this.rebalanceTree,
+    GT:   this.rebalanceTree,
     MINUS: this.rebalanceTree,
     temporary :  this.rebalanceTree,
 

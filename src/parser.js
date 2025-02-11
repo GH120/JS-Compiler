@@ -337,6 +337,8 @@ export class LLParser extends Parser{
 
         const parsingTable = this.parsingTable;
 
+        // console.log(this.language.productionRules.forEach(production => [production.variable, this.computeFirstForSequence(production.symbols)]))
+
         for(const production of this.language.productionRules){
 
             const nonTerminal = production.variable;
