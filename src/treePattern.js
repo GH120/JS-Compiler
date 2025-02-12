@@ -3,57 +3,6 @@ const list = {type: "StatementList", id: 0, evaluation: (node) => true};
 const any  = {type: null, id: 2, evaluation: node => true};
 const leftChild  = {type: null, id: 1, evaluation: node => true};
 
-const structure1 = {
-    StatementList: [{
-        Statement:[
-            'if',
-            'exp',
-            'block',
-        ]},{
-        Statement:[
-            'exp'
-        ]},
-        'StatementList'
-    ]
-}
-
-const test1 = {
-    [`${'type'}`]: "StatementList", //Deixando aqui só para lembrar que é possível usar template literals
-    children: [
-        {
-            type: "Statement", 
-            children:[
-                    {type: "if"},
-                    {type: "exp"},
-                    {type: "block"}
-                ]
-        },
-        {
-            type: "Statement",
-            children:[
-                {type: 'exp'}
-            ]
-        },
-        {type: "StatementList"}
-    ]
-}
-
-const nodeNames = {
-    pai:[
-        {filhoEsquerda: [
-            'neto1',
-            'neto2',
-            'neto3'
-        ]},
-        {filhoMeio: [
-            'if',
-            'expressão',
-            'block'
-        ]},
-        'filhoDireita'
-    ]
-}
-
 class TreePattern {
 
 
@@ -63,7 +12,7 @@ class TreePattern {
         this.matchNames   = this.createNameMatcher(nodeNames);
     }
 
-    process(tree){
+    visit(tree){
         if(this.matchPattern(tree)){
 
             const nameList = this.matchNames(tree);
@@ -115,4 +64,105 @@ class TreePattern {
     }
 }
 
-new TreePattern(structure1, nodeNames).process(test1);
+class TreeTranslator{
+
+    constructor(structure, nodeNames, newStructure){
+
+        this.treePattern  = new TreePattern(structure, nodeNames);
+        this.newStructure = newStructure;
+    }
+
+    visit(tree){
+        //Retorna um objeto com entries name: node
+        const namedNodes = this.treePattern.visit(tree);
+
+        //Reconstroi a nova estrutura mapeando os nomes dela com os nós da árvore 
+        return this.reconstruct(this.newStructure, namedNodes);
+    }
+
+    reconstruct(newStructure, namedNodes){
+
+        if(typeof newStructure == 'string'){
+
+            const name = newStructure;
+
+            return namedNodes[name];
+        }
+        
+        for(const [nodeName, childrenStructure] of Object.entries(newStructure)){
+
+            //Nó da árvore com nome igual ao da estrutura
+            const node = namedNodes[nodeName];
+
+            //Reconstroi os filhos da estrutura desse nó
+            node.children = childrenStructure.map(child => this.reconstruct(child, namedNodes));
+
+            return node;
+        }
+    }
+}
+
+
+
+const tree1 = {
+    [`${'type'}`]: "StatementList", //Deixando aqui só para lembrar que é possível usar template literals
+    children: [
+        {
+            type: "Statement", 
+            children:[
+                    {type: "if"},
+                    {type: "exp"},
+                    {type: "block"}
+                ]
+        },
+        {
+            type: "Statement",
+            children:[
+                {type: 'exp'},
+                {type: 'exp'},
+                {type: 'exp'}
+
+            ]
+        },
+        {type: "StatementList"}
+    ]
+}
+
+
+const structure1 = {
+    StatementList: [{
+        Statement:[
+            'if',
+            'exp',
+            'block',
+        ]},{
+        Statement:[
+            'exp',
+            'exp',
+            'exp',
+        ]},
+        'StatementList'
+    ]
+}
+
+const nodeNames = {
+    pai:[
+        {filhoEsquerda: [
+            'if',
+            'expressão1',
+            'block'
+        ]},
+        {filhoMeio: [
+            'expressão2',
+            'expressão3',
+            'expressão4'
+        ]},
+        'filhoDireita'
+    ]
+}
+
+const newStructure = {pai: ['filhoMeio']};
+
+
+
+new TreeTranslator(structure1, nodeNames, newStructure).visit(tree1);
