@@ -82,20 +82,26 @@ class TreeTranslator{
 
     reconstruct(newStructure, namedNodes){
 
+        //Nó da árvore com nome igual ao da estrutura, 
+        //se não houver nó existente, criar nó novo
+        const getNode = (name) => (namedNodes[name])? namedNodes[name] : {type: name, children:[]};
+
         if(typeof newStructure == 'string'){
 
-            const name = newStructure;
+            const nodeName = newStructure;
 
-            return namedNodes[name];
+            return getNode(nodeName);
         }
         
         for(const [nodeName, childrenStructure] of Object.entries(newStructure)){
 
-            //Nó da árvore com nome igual ao da estrutura
-            const node = namedNodes[nodeName];
+            const node = getNode(nodeName);
 
             //Reconstroi os filhos da estrutura desse nó
             node.children = childrenStructure.map(child => this.reconstruct(child, namedNodes));
+
+            //Se não houver filhos, substituir undefined por array vazio
+            node.children = (node.children)? node.children : [];
 
             return node;
         }
@@ -161,7 +167,18 @@ const nodeNames = {
     ]
 }
 
-const newStructure = {pai: ['filhoMeio']};
+const newStructure = {
+    pai: [
+        'filhoMeio', 
+        {filhoDireita: [
+            'filhoEsquerda'
+        ]}, 
+        {clone: [
+            'teste1',
+            'teste2'
+        ]}
+    ]
+};
 
 
 
