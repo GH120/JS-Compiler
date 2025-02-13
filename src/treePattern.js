@@ -66,25 +66,34 @@ class TreePattern {
 
 class TreeTranslator{
 
-    constructor(structure, nodeNames, newStructure){
+    constructor(structure, nodeNames, newStructure, nodeOperations = {}){
 
-        this.treePattern  = new TreePattern(structure, nodeNames);
-        this.newStructure = newStructure;
+        this.treePattern     =   new TreePattern(structure, nodeNames);
+        this.newStructure    =   newStructure;
+        this.nodeOperations  =   nodeOperations; //Operações pós processamento, para gerar labels, temps ou outros..
     }
 
     visit(tree){
         //Retorna um objeto com entries name: node
-        const namedNodes = this.treePattern.visit(tree);
+        const allNodes = this.treePattern.visit(tree);
+
+        if(allNodes == false) return false;
 
         //Reconstroi a nova estrutura mapeando os nomes dela com os nós da árvore 
-        return this.reconstruct(this.newStructure, namedNodes);
+        const translatedTree = this.reconstruct(this.newStructure, allNodes);
+
+        //Retorna a árvore após aplicar operações escolhidas para cada nó
+        //Usado para criar labels, temps, e designar labels para blocos e funções
+        this.applyOperations(allNodes);
+        
+        return translatedTree;
     }
 
-    reconstruct(newStructure, namedNodes){
+    reconstruct(newStructure, allNodes){
 
         //Nó da árvore com nome igual ao da estrutura, 
         //se não houver nó existente, criar nó novo
-        const getNode = (name) => (namedNodes[name])? namedNodes[name] : {type: name, children:[]};
+        const getNode = (name) => this.getNode(allNodes, name);
 
         if(typeof newStructure == 'string'){
 
@@ -98,13 +107,34 @@ class TreeTranslator{
             const node = getNode(nodeName);
 
             //Reconstroi os filhos da estrutura desse nó
-            node.children = childrenStructure.map(child => this.reconstruct(child, namedNodes));
+            node.children = childrenStructure.map(child => this.reconstruct(child, allNodes));
 
             //Se não houver filhos, substituir undefined por array vazio
             node.children = (node.children)? node.children : [];
 
             return node;
         }
+    }
+
+    applyOperations(allNodes){
+
+        //Para cada par nome : operação, aplicar pós processamento no nó com esse nome
+        for(const [nodeName, operation] of Object.entries(this.nodeOperations)){
+            
+            const node = allNodes[nodeName];
+
+            //Operação sobre o nó especifico, usando o contexto de todos os nós
+            operation(node, allNodes);
+        }
+    }
+
+    getNode(allNodes, name){
+
+        const node = (allNodes[name])? allNodes[name] : {type: name, children: []};
+
+        allNodes[name] = node;
+
+        return node;
     }
 }
 
@@ -180,6 +210,12 @@ const newStructure = {
     ]
 };
 
+const postProcessing = {
+    pai: (pai, allNodes) => {
+        pai.filhos = pai.children.length;
+    }
+}
 
 
-new TreeTranslator(structure1, nodeNames, newStructure).visit(tree1);
+
+new TreeTranslator(structure1, nodeNames, newStructure, postProcessing).visit(tree1);

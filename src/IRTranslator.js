@@ -1,4 +1,36 @@
+
+class NodeOperations {
+
+    //Dá um nome para o nó label e seta seu tipo para ser 'Label'
+    static createLabel(label){
+
+        const randomLabelName = (Math.random() + 1).toString(36).substring(7);
+
+        //Se for repetida, tenta novamente
+        if(this.labels.has(randomLabelName)) return this.createLabel(label);
+
+        this.labels.add(randomLabelName);
+
+        label.type = 'Label';
+        label.value = randomLabelName;
+
+        return label;
+    }
+
+    //Retorna uma função que, para um nó fornecido, busca uma label para atribuir a ele
+    //Por exemplo, o bloco true vai receber a label com nome 'LabelT'
+    static assignLabel(labelName){
+        return (chosenNode, allNodes) => {
+            chosenNode.label = allNodes[labelName];
+        }
+    }
+}
+
 class IRTranslate {
+
+    constructor(){
+        this.labels = new Set();
+    }
 
     patterns = {
 
@@ -24,7 +56,7 @@ class IRTranslate {
                         "rightOperand"
                     ]}, 
                     'trueBlock', // Bloco verdadeiro
-                    'falseBlock' // Bloco falso
+                    'falseBlock' // Bloco falso, opcional
                 ]
             },
         
@@ -35,7 +67,7 @@ class IRTranslate {
                         "LT", 
                         "leftOperand", 
                         "rightOperand", 
-                        "LabelZ", 
+                        "LabelZ", //Caso de duas comparações a<b && a>c
                         "LabelF"
                     ]},
                     { SEQ: [
@@ -43,6 +75,13 @@ class IRTranslate {
                         { CJUMP: ["LT", "leftOperand", "rightOperand", "LabelT", "LabelF"] }
                     ]}
                 ]
+            },
+
+            applyFunctions: {
+                trueBlock:  NodeOperations.assignLabel('LabelT'),
+                falseBlock: NodeOperations.assignLabel('LabelF'),
+                LabelF:     NodeOperations.createLabel, 
+                LabelT:     NodeOperations.createLabel
             }
 
         },
