@@ -240,7 +240,9 @@ export class MiniJavaAST extends AbstractSyntaxTree{
     LBRACE: node => null,
     VAR: node => null,
     SEMI: node => null,
-    ASSIGN: node => null
+    ASSIGN: node => null,
+    CLASS: node => null,
+    PUBLIC: node => null
   }
 
   secondElimination = {

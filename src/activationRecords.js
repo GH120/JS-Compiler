@@ -28,107 +28,39 @@ export class AccessList {
         }
     }
 }
-  
-// Classe abstrata Frame
-export class Frame {
-    constructor(name) {
-        if (new.target === Frame) {
-            throw new Error("Cannot instantiate abstract class Frame");
-        }
-        this.name = name;
-        this.formals = null;
-    }
 
-    newFrame(name, formals) {
-        throw new Error("Must implement newFrame in subclass");
-    }
+// Exemplo de uma Subclasse concreta
+export class ConcreteFrame extends Frame {
+  constructor(name, formals) {
+      super(name);
+      this.formals = formals;
+      this.locals = [];
+  }
 
-    allocLocal(escape) {
-        throw new Error("Must implement allocLocal in subclass");
-    }
+  newFrame(name, formals) {
+      return new ConcreteFrame(name, formals);
+  }
+
+  allocLocal(escape) {
+      const local = {
+          escape: escape,
+          offset: this.locals.length
+      };
+      this.locals.push(local);
+      return {
+          exp: () => `LOCAL_${local.offset}`
+      };
+  }
+
+  FP() {
+      return "FP";
+  }
+
+  procEntryExit1(stms) {
+      console.log(`Processing Entry/Exit for ${this.name}`);
+      stms.forEach(stm => {
+          console.log(stm);
+      });
+  }
 }
 
-
-// Classe Temp
-class Temp {
-    constructor() {
-      this.id = `t${Math.floor(Math.random() * 1000)}`;
-    }
-  
-    toString() {
-      return this.id;
-    }
-  }
-  
-  // Classe Label
-  class Label {
-    constructor(value) {
-      if (value instanceof Symbol) {
-        this.value = value.description;
-      } else if (typeof value === 'string') {
-        this.value = value;
-      } else {
-        this.value = `L${Math.floor(Math.random() * 1000)}`;
-      }
-    }
-  
-    toString() {
-      return this.value;
-    }
-  }
-  
-  // Classe TempList (lista encadeada de Temp)
-  class TempList {
-    constructor(head = null, tail = null) {
-      this.head = head;
-      this.tail = tail;
-    }
-  
-    // Adiciona um Temp à lista
-    add(temp) {
-      if (!this.head) {
-        this.head = temp;
-        this.tail = null;
-      } else {
-        this.tail = new TempList(temp, this.tail);
-      }
-    }
-  
-    // Percorre a lista
-    printList() {
-      let current = this;
-      while (current) {
-        if (current.head) {
-          console.log(current.head.toString());
-        }
-        current = current.tail;
-      }
-    }
-  }
-  
-  // Classe LabelList (lista encadeada de Label)
-  class LabelList {
-    constructor(head = null, tail = null) {
-      this.head = head;
-      this.tail = tail;
-    }
-  
-    add(label) {
-      if (!this.head) {
-        this.head = label;
-        this.tail = null;
-      } else {
-        this.tail = new LabelList(label, this.tail);
-      }
-    }
-  
-    printList() {
-      let current = this;
-      while (current) {
-        if (current.head) {
-          console.log(current.head.toString());
-        }
-        current = current.tail;
-      }
-    }
-  }

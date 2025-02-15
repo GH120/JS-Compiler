@@ -93,3 +93,30 @@ export class ImperativeSymbolTable extends SymbolTable{
         return this.environment[variable];
     }
 }
+
+
+export class Node {
+    constructor({type, children, value = null, token = null}){
+        this.type     = type;
+        this.children = children;
+        this.value    = value;
+        this.token    = token;
+    }
+
+    get(childType){
+        return this.children.find(c => c.type == childType);
+    }
+
+    getAll(childType){
+        return this.children.map(c => c.type == childType)
+    }
+
+    static convert(objectNode){
+
+        const node = new Node(objectNode);
+
+        node.children = node.children.map(child => new Node(child));
+
+        return node;
+    }
+}
